@@ -20,7 +20,13 @@ dataList = defaultdict(list)
 payloadList ={}
 
 # データ取得回数
-getDataCount = 5
+getDataCount = 20
+
+# スキャン時間
+scantime = 1.0
+
+# スキャン回数初期値
+initCount = 1
 
 # 対象UUID
 targetUuid = "deac3f40-8290-11e5-b15c-0002a5d5c51b"
@@ -32,13 +38,14 @@ def main(count):
     #logger = getLogger(__name__)
 
     # デバイスのスキャン:引数はスキャンする秒数
-    devices = scanner.scan(1.0)
+    devices = scanner.scan(scantime)
 
     # モデムの設定
     modem = RHF3M076()
     # 取得したデバイスに対して処理
-    for device in devices:
-        for addr in deviceList.keys():
+    #for device in devices:
+    for addr in deviceList.keys():
+        for device in devices:
             if device.addr == addr:
                 # valueText=デバイスから取得したデータの値
                 for (valueText) in device.getScanData():
@@ -51,11 +58,20 @@ def main(count):
                         advertiseData = valueText[2]
                         dataList[addr].append(advertiseData)
                         
-                        if count == getDataCount:
-                            payloadList[addr] = getData.getPayload(devAddr,addr,dataList)
-                            break
+                        #if count == getDataCount:
+                        #    payloadList[addr] = getData.getPayload(devAddr,addr,dataList)
+                        #    break
                     else:
                         continue
+
+        if  count == getDataCount:
+            devAddrRep = addr.replace(":","")
+            devAddr = devAddrRep[6:12]
+            payload = getData.getPayload(devAddr,addr,dataList)
+
+            if len(payload) > 0:
+                payloadList[addr] = payload
+              
             else:
                 continue
                 #break
@@ -80,9 +96,6 @@ if __name__ == '__main__':
     # 送信回数:初期値
     sendCount = 0
 
-    # スキャン回数:初期値
-    count = 0
-
     # モデムの設定
     modem = RHF3M076()
 
@@ -91,13 +104,12 @@ if __name__ == '__main__':
     scanner = btle.Scanner(0)
 
     # スキャン回数：初期値
-    count = 0 
+    count = initCount
 
     while True:
 
         # デバイススキャン
-        if sendCount == 0 and count == 0:
-            print("list")
+        if sendCount == 0 and count == initCount:
             # デバイススキャンクラスを初期化
             # index=0 が /dev/hci0 に対応
             scanner = btle.Scanner(0)
@@ -106,13 +118,13 @@ if __name__ == '__main__':
             iBeaconScanner = BeaconScanner(callback,
             device_filter=IBeaconFilter(uuid=targetUuid))
             iBeaconScanner.start()
-            time.sleep(1)
+            time.sleep(scantime)
             iBeaconScanner.stop()
 
         # スキャン結果が取得できなかった
         if len(deviceList) == 0:
            sendCount = 0
-           count = 0
+           count = initCount
            continue 
         
         # メイン処理実行
@@ -123,24 +135,27 @@ if __name__ == '__main__':
             count = count + 1
         # 上限到達
         else:
-            # RSSI強度でソート
-            sortDeviceList = getData.sortDevice(deviceList)
 
-            # payload送信
-            # 1-4ユーザー分Payload作成
-            firstPayload = getData.makePayload(sortDeviceList,payloadList,1)
-            # 5-8ユーザー分Payload作成
-            secondPayload = getData.makePayload(sortDeviceList,payloadList,2)
+            if len(payloadList) > 0:
+                # RSSI強度でソート
+                sortDeviceList = getData.sortDevice(deviceList)
 
-            # Payload送信
-            # 1-4ユーザー分
-            if len(firstPayload) > 0:
-                if not modem.sendPayload(firstPayload):
-                    logger.error('Payload 1-4user send failed:'+ firstPayload)
-            # 5-8ユーザー分
-            if len(secondPayload) > 0:
-                if not modem.sendPayload(secondPayload):
-                    logger.error('Payload 5-8user send failed:'+ secondPayload)
+                # payload送信
+                # 1-4ユーザー分Payload作成
+                firstPayload = getData.makePayload(sortDeviceList,payloadList,1)
+                firstPayload = firstPayload[0:20]
+                # 5-8ユーザー分Payload作成
+                secondPayload = getData.makePayload(sortDeviceList,payloadList,2)
+
+                # Payload送信
+                # 1-4ユーザー分
+                if len(firstPayload) > 0:
+                    if not modem.sendPayload(firstPayload):
+                        logger.error('Payload 1-4user send failed:'+ firstPayload)
+                # 5-8ユーザー分
+                if len(secondPayload) > 0:
+                    if not modem.sendPayload(secondPayload):
+                        logger.error('Payload 5-8user send failed:'+ secondPayload)
 
             # 送信回数判定
             if sendCount < 1:
@@ -150,9 +165,8 @@ if __name__ == '__main__':
                 # 送信回数初期化
                 sendCount = 0 
                 # デバイスリスト初期化
-                print("after:" + str(deviceList))
                 deviceList={}
 
             # スキャン回数,受信データ初期化
-            count = 0
+            count = initCount
             dataList = defaultdict(list)

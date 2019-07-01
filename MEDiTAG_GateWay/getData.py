@@ -12,6 +12,7 @@ class getData:
       payload = ""
       pulseMin = ""
       pulseMax = ""
+      pulseMid = ""
       pulseMidList = []
 
       if addr in dataList :
@@ -31,13 +32,19 @@ class getData:
               status = getData.getStatus(advertiseData)
  
           # 脈拍:中央値算出
+          print(pulseMidList)
           defPulseMid = statistics.median(pulseMidList)
           # 脈拍:中央値
-          pulseMid = format(round(defPulseMid),'x')
-
+          pulseMidStr = str(format(round(defPulseMid),'x'))
+          if len(pulseMidStr) == 1:
+              pulseMid = "0"+pulseMidStr
+          else:
+              pulseMid = pulseMidStr
+          
           # 送信用Payload 
           payload=devAddr+pulseMid+pulseMax+pulseMin+stepCount+stress+status
-          print(payload)
+      else :
+          payload = ""
 
       return payload
  
@@ -81,7 +88,6 @@ class getData:
       # 10進数を詰め込む
       pulse = int(newPulse,16)
       pulseMid.append(pulse)
-      
       return pulseMid
 
   # 歩数取得
@@ -99,7 +105,7 @@ class getData:
   # 状態表示取得
   def getStatus (advertiseData):
 
-      status = status = advertiseData[20:22]
+      status = advertiseData[20:22]
       return status
 
   # デバイスリストのソート(RSSI強度順)
