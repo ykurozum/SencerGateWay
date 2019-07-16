@@ -21,6 +21,7 @@ payloadList ={}
 
 # データ取得回数
 getDataCount = 20
+#getDataCount = 10
 
 # スキャン時間
 scantime = 1.0
@@ -44,26 +45,21 @@ def main(count):
     modem = RHF3M076()
     # 取得したデバイスに対して処理
     #for device in devices:
+    # 対象UUIDのリスト分Loop
     for addr in deviceList.keys():
+        # データ取得したデバイス分Loop
         for device in devices:
             if device.addr == addr:
                 # valueText=デバイスから取得したデータの値
                 for (valueText) in device.getScanData():
                     # Manufactureデータの取得
                     if valueText[1] == 'Manufacturer' and len(valueText[2]) == 58:
-                        # デバイスアドレス
-                        devAddrRep = device.addr.replace(":","")
-                        devAddr = devAddrRep[6:12]
                         # アドバタイズデータ
                         advertiseData = valueText[2]
                         dataList[addr].append(advertiseData)
-                        
-                        #if count == getDataCount:
-                        #    payloadList[addr] = getData.getPayload(devAddr,addr,dataList)
-                        #    break
                     else:
                         continue
-
+        # 上限到達
         if  count == getDataCount:
             devAddrRep = addr.replace(":","")
             devAddr = devAddrRep[6:12]
@@ -143,7 +139,7 @@ if __name__ == '__main__':
                 # payload送信
                 # 1-4ユーザー分Payload作成
                 firstPayload = getData.makePayload(sortDeviceList,payloadList,1)
-                firstPayload = firstPayload[0:20]
+                #firstPayload = firstPayload[0:20]
                 # 5-8ユーザー分Payload作成
                 secondPayload = getData.makePayload(sortDeviceList,payloadList,2)
 

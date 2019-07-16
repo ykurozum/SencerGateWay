@@ -32,7 +32,6 @@ class getData:
               status = getData.getStatus(advertiseData)
  
           # 脈拍:中央値算出
-          print(pulseMidList)
           defPulseMid = statistics.median(pulseMidList)
           # 脈拍:中央値
           pulseMidStr = str(format(round(defPulseMid),'x'))
