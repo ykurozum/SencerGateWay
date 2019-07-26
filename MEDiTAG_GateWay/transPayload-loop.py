@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+import datetime
 import time
 import os
 from collections import defaultdict
@@ -31,6 +32,9 @@ initCount = 1
 
 # 対象UUID
 targetUuid = "deac3f40-8290-11e5-b15c-0002a5d5c51b"
+
+# logディレクトリパス
+logDirPath = "/home/pi/py/modem/log/" 
 
 # メイン処理
 def main(count):
@@ -77,7 +81,7 @@ def callback(bt_addr, rssi, packet, additional_info):
     # リスト内に同一keyが存在するか
     if bt_addr in deviceList :
         # RSSIの比較
-        if deviceList[bt_addr] > rssi:
+        if deviceList[bt_addr] < rssi:
              # RSSI更新
              deviceList[bt_addr] = rssi
     else:
@@ -103,6 +107,11 @@ if __name__ == '__main__':
     count = initCount
 
     while True:
+
+        logdate = datetime.datetime.today().strftime("%Y%m%d")
+        f = open( logDirPath + logdate + '.log','a')
+        f.write('ackError:' + test)
+        f.close()
 
         # デバイススキャン
         if sendCount == 0 and count == initCount:
@@ -139,7 +148,6 @@ if __name__ == '__main__':
                 # payload送信
                 # 1-4ユーザー分Payload作成
                 firstPayload = getData.makePayload(sortDeviceList,payloadList,1)
-                #firstPayload = firstPayload[0:20]
                 # 5-8ユーザー分Payload作成
                 secondPayload = getData.makePayload(sortDeviceList,payloadList,2)
 
@@ -147,11 +155,21 @@ if __name__ == '__main__':
                 # 1-4ユーザー分
                 if len(firstPayload) > 0:
                     if not modem.sendPayload(firstPayload):
-                        logger.error('Payload 1-4user send failed:'+ firstPayload)
+                        f = open( logDirPath + logdate + '.log','a')
+                        f.write('ackError:' + firstPayload + '\n')
+                        f.close()
+                        #logger.error('Payload 1-4user send failed:'+ firstPayload)
+
+                # 10秒間隔を空ける
+　　　　　　　　time.sleep(10)
+
                 # 5-8ユーザー分
                 if len(secondPayload) > 0:
                     if not modem.sendPayload(secondPayload):
-                        logger.error('Payload 5-8user send failed:'+ secondPayload)
+                        f = open( logDirPath + logdate + '.log','a')
+                        f.write('ackError:' + secondPayload + '\n')
+                        f.close()
+                        #logger.error('Payload 5-8user send failed:'+ secondPayload)
 
             # 送信回数判定
             if sendCount < 1:

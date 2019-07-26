@@ -113,7 +113,7 @@ class getData:
       targetDeviceList = []
       
       # ソート
-      for k, v in sorted(deviceList.items(), key=lambda x: x[1]):
+      for k, v in sorted(deviceList.items(), key=lambda x: -x[1]):
           targetDeviceList.append(k)
 
       return targetDeviceList
