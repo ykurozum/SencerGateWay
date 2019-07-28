@@ -161,7 +161,7 @@ if __name__ == '__main__':
                         #logger.error('Payload 1-4user send failed:'+ firstPayload)
 
                 # 10秒間隔を空ける
-　　　　　　　　time.sleep(10)
+                time.sleep(10)
 
                 # 5-8ユーザー分
                 if len(secondPayload) > 0:
