@@ -109,9 +109,6 @@ if __name__ == '__main__':
     while True:
 
         logdate = datetime.datetime.today().strftime("%Y%m%d")
-        f = open( logDirPath + logdate + '.log','a')
-        f.write('ackError:' + test)
-        f.close()
 
         # デバイススキャン
         if sendCount == 0 and count == initCount:
