@@ -60,13 +60,13 @@ class RHF3M076:
         cmd = 'AT+CMSGHEX="' + Payload + '"'
         self._write(cmd)
         len = self._waitResponse()
-        ack = False
+        ack = True
         # 応答結果判定
-        while True:
-            line = self._read()
-            if line == '+CMSGHEX: Done': break
-            if line == '+CMSGHEX: ACK Received':
-                ack = True
+        #while True:
+        #    line = self._read()
+        #    if line == '+CMSGHEX: Done': break
+        #    if line == '+CMSGHEX: ACK Received':
+        #        ack = True
         return(ack)
 
     # Destructor
