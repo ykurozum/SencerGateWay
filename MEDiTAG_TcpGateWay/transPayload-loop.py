@@ -10,6 +10,7 @@ from beacontools import BeaconScanner,IBeaconFilter
 from logging import basicConfig, getLogger, DEBUG
 from data import Data
 from base import BaseJSONEncoder
+import configparser
 
 # デバイスリスト
 deviceList = {}
@@ -95,17 +96,31 @@ def sendData(url, addr, data):
 '''
 if __name__ == '__main__':
 
+    # 設定読み込み
+    configParser = configparser.ConfigParser()
+    configParser.read("config.ini")
+    config = configParser["config"]
+
+
     # logディレクトリパス
-    LOG_DIR_PATH = "/home/pi/py/log/"
+    LOG_DIR_PATH = config["log_dir_path"]
+    print("LOG_DIR_PATH = " + LOG_DIR_PATH)
+    log(LOG_DIR_PATH, "LOG_DIR_PATH = " + LOG_DIR_PATH)
 
     # 対象UUID
-    UUID = "deac3f40-8290-11e5-b15c-0002a5d5c51b"
+    UUID = config["uuid"]
+    print("UUID = " + UUID)
+    log(LOG_DIR_PATH, "UUID = " + UUID)
 
     # スキャン時間[秒]
-    SCAN_TIME = 1
+    SCAN_TIME = config.getint("scan_time")
+    print("SCAN_TIME = " + str(SCAN_TIME))
+    log(LOG_DIR_PATH, "SCAN_TIME = " + str(SCAN_TIME))
 
     # 転送URL
-    URL = "http://192.168.10.199:1880/test"
+    HOST = config["host"]
+    print("HOST = " + HOST)
+    log(LOG_DIR_PATH, "HOST = " + HOST)
 
     # 初期設定
     basicConfig(level=DEBUG)
@@ -144,4 +159,4 @@ if __name__ == '__main__':
                     data = getData(device)
 
                     # データ送信
-                    sendData(URL, device.addr, data)
+                    sendData(HOST, device.addr, data)
