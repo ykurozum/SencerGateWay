@@ -122,6 +122,9 @@ if __name__ == '__main__':
     print("HOST = " + HOST)
     log(LOG_DIR_PATH, "HOST = " + HOST)
 
+    # 受信ペイロード長
+    PAYLOAD_LEN = 58
+
     # 初期設定
     basicConfig(level=DEBUG)
     logger = getLogger(__name__)
@@ -157,6 +160,6 @@ if __name__ == '__main__':
 
                     # データ取得
                     data = getData(device)
-
-                    # データ送信
-                    sendData(HOST, device.addr, data)
+                    if (len(data) == PAYLOAD_LEN):
+                        # データ送信
+                        sendData(HOST, device.addr, data)
