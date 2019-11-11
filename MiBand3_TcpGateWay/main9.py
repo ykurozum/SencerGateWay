@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# coding: utf-8
+
 import sys
 from auth3 import MiBand3
 from cursesmenu import *
@@ -16,23 +19,23 @@ import urllib.request
 LOOP_INTERVAL = 10
 
 def call_immediate():
-    print 'Sending Call Alert'
+    print('Sending Call Alert')
     time.sleep(1)
     band.send_alert(ALERT_TYPES.PHONE)
 
 def msg_immediate():
-    print 'Sending Message Alert'
+    print('Sending Message Alert')
     time.sleep(1)
     band.send_alert(ALERT_TYPES.MESSAGE)
 
 def detail_info():
-    print 'MiBand'
-    print 'Soft revision:',band.get_revision()
-    print 'Hardware revision:',band.get_hrdw_revision()
-    print 'Serial:',band.get_serial()
-    print 'Battery:', band.get_battery_info()
-    print 'Time:', band.get_current_time()
-    print 'Steps:', band.get_steps()
+    print('MiBand')
+    print('Soft revision:',band.get_revision())
+    print('Hardware revision:',band.get_hrdw_revision())
+    print('Serial:',band.get_serial())
+    print('Battery:', band.get_battery_info())
+    print('Time:', band.get_current_time())
+    print('Steps:', band.get_steps())
     raw_input('Press Enter to continue')
 
 def custom_message():
@@ -46,7 +49,7 @@ def custom_missed_call():
     band.send_custom_alert(4)
 
 def l(x):
-    print 'Realtime heart BPM:', x
+    print('Realtime heart BPM:', x)
 
 def heart_beat():
     band.start_raw_data_realtime(heart_measure_callback=l)
@@ -62,7 +65,7 @@ def updateFirmware():
 #def handleNotification(self, cHandle, data):
  #if cHandle == 0x0041:
   #c_data = binascii.b2a_hex(data)
- #print c_data
+ #print(c_data
 
 def startGetData( MAC_ADDR, datapool, getStartBin):
     band = MiBand3(MAC_ADDR, debug=True, datapool=datapool)
@@ -109,7 +112,7 @@ def startGetData( MAC_ADDR, datapool, getStartBin):
             if band.waitForNotifications(0.5) == False:
                 break
     except KeyboardInterrupt:
-        print "Catch Interrupt: disconnect"
+        print("Catch Interrupt: disconnect")
     finally:
         # utils.dumpDataPool( band.datapool )
         band.disconnect()
@@ -150,10 +153,10 @@ if len(sys.argv) > 2:
         band.disconnect()
 else:
     MAC_ADDR = sys.argv[1]
-    print 'Attempting to connect to ', MAC_ADDR
+    print('Attempting to connect to ', MAC_ADDR)
 
     # 転送URL
-    URL = "http://192.168.10.199:1880/test"
+    HOST = "http://192.168.10.199:1880/test"
 
     lastDttm = datetime.datetime(2019, 8, 12, 0, 0, 0 )
     while True:
@@ -167,12 +170,10 @@ else:
             status = datapool["status"]
             print( "ResultStatus:"+status )
             if( status == "100201" ):
-#                bodies = utils.splitDataPool( datapool )
-#                 for body in bodies
-#                     sendData(URL, body)
-                # ペイロードをそのまま送信
-                body = datapool["payload"]
-                sendData(URL, body)
+                bodies = utils.splitDataPool( datapool )
+                 for body in bodies
+                     sendData(URL, body)
+                sendData(HOST, body)
                 print("step1)")
                 print("LastDttm in data pool:"+ str( lastDttm ) )
                 lastDttm = lastDttm + timedelta(minutes=1)

@@ -53,9 +53,9 @@ def dttm2hexEndianStr0x( dttm ):
     return b
 
 def dumpDataPool( datapool ):
-    print str( datapool["StartDttm"] )
+    print(str( datapool["StartDttm"] ))
     for payload in datapool["payload"]:
-        print payload
+        print(payload)
 
 '''
 アドレス取得
@@ -113,10 +113,10 @@ def insertDb( insertData ):
         #--
         #ret = cur.execute("SELECT * FROM mi_payload;")
         #for row in ret.fetchall():
-        #    print "'%s'" % row[0], row[1], type(row[1])
+        #    print("'%s'" % row[0], row[1], type(row[1]))
         #--
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
         conn.rollback()
     finally:
         conn.close()
@@ -130,8 +130,8 @@ def selectDb( DevAddr ):
         for row in ret.fetchall():
             result.append( (row[0], row[1], row[2] ) )
         #--
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
         if conn: conn.rollback()
     finally:
         if conn: conn.close()
@@ -143,8 +143,8 @@ def deleteDb( DevAddr, LastDttm ):
         ( conn, cur) = initDb()
         ret = cur.execute("DELETE FROM mi_payload where devaddr = '"+ DevAddr + "' AND dttm <= '"+LastDttm+"';")
         conn.commit()
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
         if conn: conn.rollback()
     finally:
         if conn: conn.close()
