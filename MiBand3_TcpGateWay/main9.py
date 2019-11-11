@@ -172,8 +172,7 @@ else:
             if( status == "100201" ):
                 bodies = utils.splitDataPool( datapool )
                  for body in bodies
-                     sendData(URL, body)
-                sendData(HOST, body)
+                     sendData(HOST, body)
                 print("step1)")
                 print("LastDttm in data pool:"+ str( lastDttm ) )
                 lastDttm = lastDttm + timedelta(minutes=1)
