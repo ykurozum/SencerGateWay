@@ -8,17 +8,20 @@ from bluepy.btle import Peripheral, DefaultDelegate, ADDR_TYPE_RANDOM, BTLEExcep
 import crc16
 import os
 import struct
+import utils
 
 from constants import UUIDS, AUTH_STATES, ALERT_TYPES, QUEUE_TYPES
 
 
 class AuthenticationDelegate(DefaultDelegate):
+    idx = 0
 
     """This Class inherits DefaultDelegate to handle the authentication process."""
 
     def __init__(self, device):
         DefaultDelegate.__init__(self)
         self.device = device
+        self.idx = 0
 
     def peri(self):
         bluepy.btle.Peripheral(self)
@@ -50,25 +53,31 @@ class AuthenticationDelegate(DefaultDelegate):
                 self.device.queue.put((QUEUE_TYPES.RAW_ACCEL, data))
             elif len(data) == 16:
                 self.device.queue.put((QUEUE_TYPES.RAW_HEART, data))
-        #0x0041のデータを表示する
+        #0x0041
         elif hnd == 0x41:
-            print str(data.encode("hex")) + " len:" + str(len(data))
-        #Valueが100201か100204かの判定（未実装）
+            hexPayloadStr = str(data.encode("hex")) 
+            # print "01>" + hexPayloadStr + " len:" + str(len(data))
+            self.device.datapool["payload"].append( hexPayloadStr )
+            self.idx = self.idx +1
+        #Value
         elif hnd == 0x3e:
-            print str(data.encode("hex"))             
             #self.disconnect()             
-            #if str(data.encode("hex")) == 100201: 
-                #print str(data.encode("hex"))
-            #if str(data.encode("hex")) == 100204:
-                #print "Need retry"
-　　　　　　　 #正常切断（未実装）
-            #else:
+            hexStr = str(data.encode("hex"))
+            if hexStr == "100201": 
+                self.device.datapool["status"] = hexStr
+            elif hexStr == "100204":
+                self.device.datapool["status"] = hexStr
+            elif hexStr.startswith( "100101" ):
+                # add cisco. may be top of data time
+                startDttm = utils.hexbin2dttm( data, 14 )
+                self.device.datapool["StartDttm"] =  startDttm
+            else:
+                self.device.datapool["status"] = hexStr
                 #self.device._log.error("Unhandled Response " + hex(hnd) + ": " +
                                   # str(data.encode("hex")) + " len:" + str(len(data)))
         else:
-            self.device._log.error("Unhandled Response " + hex(hnd) + ": " +
+            self.device._log.error("06>Unhandled Response " + hex(hnd) + ": " +
                                    str(data.encode("hex")) + " len:" + str(len(data)))
-　　　　　　　 #正常切断（未実装）
             #self.disconnect() 
 
 class MiBand3(Peripheral):
@@ -76,8 +85,11 @@ class MiBand3(Peripheral):
     _send_key_cmd = struct.pack('<18s', b'\x01\x08' + _KEY)
     _send_rnd_cmd = struct.pack('<2s', b'\x02\x08')
     _send_enc_key = struct.pack('<2s', b'\x03\x08')
+    datapool = {}
 
-    def __init__(self, mac_address, timeout=0.5, debug=False):
+    def __init__(self, mac_address, timeout=0.5, debug=False, datapool={}):
+        datapool["DeviceAddress"] = mac_address.replace(":","")
+        self.datapool = datapool
         FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
         logging.basicConfig(format=FORMAT)
         log_level = logging.WARNING if not debug else logging.DEBUG
@@ -324,7 +336,7 @@ class MiBand3(Peripheral):
         char.write(base_value+phone, withResponse=True)
 
     def change_date(self):
-        print('Change date and time')
+        #print('Change date and time')
         svc = self.getServiceByUUID(UUIDS.SERVICE_MIBAND1)
         char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_CURRENT_TIME)[0]
         # date = raw_input('Enter the date in dd-mm-yyyy format\n')
@@ -346,7 +358,7 @@ class MiBand3(Peripheral):
         char.write('\xe2\x07\x01\x1e\x00\x00\x00\x00\x00\x00\x16', withResponse=True)
         raw_input('Date Changed, press any key to continue')
     def dfuUpdate(self, fileName):
-        print('Update Firmware/Resource')
+        # print('Update Firmware/Resource')
         svc = self.getServiceByUUID(UUIDS.SERVICE_DFU_FIRMWARE)
         char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_DFU_FIRMWARE)[0]
         extension = os.path.splitext(fileName)[1][1:]
@@ -367,7 +379,7 @@ class MiBand3(Peripheral):
                 crc ^= (crc << 12) & 0xFFFF
                 crc ^= ((crc & 0xFF) << 5) & 0xFFFFFF
         crc &= 0xFFFF
-        print('CRC Value is-->', crc)
+        # print('CRC Value is-->', crc)
         raw_input('Press Enter to Continue')
         if extension.lower() == "res":
             # file size hex value is
@@ -380,20 +392,20 @@ class MiBand3(Peripheral):
           while True:
             c = f.read(20) #takes 20 bytes :D
             if not c:
-              print "Update Over"
+              # print "Update Over"
               break
-            print('Writing Resource', c.encode('hex'))
+            # print('Writing Resource', c.encode('hex'))
             char1.write(c)
         # after update is done send these values
         char.write(b'\x00', withResponse=True)
         self.waitForNotifications(0.5)
-        print('CheckSum is --> ', hex(crc & 0xFF), hex((crc >> 8) & 0xFF))
+        # print('CheckSum is --> ', hex(crc & 0xFF), hex((crc >> 8) & 0xFF))
         checkSum = b'\x04' + chr(crc & 0xFF) + chr((crc >> 8) & 0xFF)
         char.write(checkSum, withResponse=True)
         if extension.lower() == "fw":
             self.waitForNotifications(0.5)
             char.write('\x05', withResponse=True)
-        print('Update Complete')
+        # print('Update Complete')
         raw_input('Press Enter to Continue')
     def start_raw_data_realtime(self, heart_measure_callback=None, heart_raw_callback=None, accel_raw_callback=None):
             char_m = self.svc_heart.getCharacteristics(UUIDS.CHARACTERISTIC_HEART_RATE_MEASURE)[0]
@@ -458,7 +470,7 @@ class MiBand3(Peripheral):
     def start_get_previews_data(self, start_timestamp):
             self._auth_previews_data_notif(True)
             self.waitForNotifications(0.1)
-            print("Trigger activity communication")
+            # print("Trigger activity communication")
             year = struct.pack("<H", start_timestamp.year)
             month = struct.pack("<H", start_timestamp.month)[0]
             day = struct.pack("<H", start_timestamp.day)[0]
