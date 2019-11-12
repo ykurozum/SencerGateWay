@@ -64,7 +64,8 @@ def log(logDirPath, message):
 def sendData(url, addr, data):
 
     d = Data()
-    d.DevEUI_uplink.DevAddr = getAddr(addr)
+    d.DevEUI_uplink.DevAddr = addr
+    d.DevEUI_uplink.DevEUI = getAddr(addr)
     d.DevEUI_uplink.Time = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).strftime("%Y-%m-%dT%H:%M:%S%z")
     d.DevEUI_uplink.payload_hex = data
     body = json.dumps(d, cls = BaseJSONEncoder, sort_keys = True)

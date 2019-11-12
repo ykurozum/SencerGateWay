@@ -16,6 +16,7 @@ import utils
 import struct
 import json
 import configparser
+import urllib.request
 from data import Data
 from base import BaseJSONEncoder
 
@@ -171,6 +172,15 @@ def startRead(MAC_ADDR, lastDttm):
             sleepLoop()
 
 '''
+アドレス取得
+'''
+def getAddr(addr):
+    # 結合文字削除
+    temp = addr.replace(":","")
+    # 下位6文字
+    return temp[len(temp)-6:]
+
+'''
 データ送信
 '''
 def sendData(url, addr, data):
@@ -231,7 +241,7 @@ if __name__ == '__main__':
                 # 受信
                 result = startRead(MAC_ADDR, lastReadDttm)
                 lastDttm = result[0]
-                print(" lastEndRead:"+str(lastDttm))
+                print("lastEndRead:"+str(lastDttm))
 
                 # 送信
                 for data in result[1]:
