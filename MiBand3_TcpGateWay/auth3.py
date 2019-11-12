@@ -3,7 +3,7 @@ import time
 import logging
 from datetime import datetime
 from Crypto.Cipher import AES
-from Queue import Queue, Empty
+from queue import Queue, Empty
 from bluepy.btle import Peripheral, DefaultDelegate, ADDR_TYPE_RANDOM, BTLEException
 import crc16
 import os
@@ -55,15 +55,15 @@ class AuthenticationDelegate(DefaultDelegate):
                 self.device.queue.put((QUEUE_TYPES.RAW_HEART, data))
         #0x0041
         elif hnd == 0x41:
-            hexPayloadStr = str(data.encode("hex")) 
+            hexPayloadStr = str(data.encode("hex"))
             # print "01>" + hexPayloadStr + " len:" + str(len(data))
             self.device.datapool["payload"].append( hexPayloadStr )
             self.idx = self.idx +1
         #Value
         elif hnd == 0x3e:
-            #self.disconnect()             
+            #self.disconnect()
             hexStr = str(data.encode("hex"))
-            if hexStr == "100201": 
+            if hexStr == "100201":
                 self.device.datapool["status"] = hexStr
             elif hexStr == "100204":
                 self.device.datapool["status"] = hexStr
@@ -78,7 +78,7 @@ class AuthenticationDelegate(DefaultDelegate):
         else:
             self.device._log.error("06>Unhandled Response " + hex(hnd) + ": " +
                                    str(data.encode("hex")) + " len:" + str(len(data)))
-            #self.disconnect() 
+            #self.disconnect()
 
 class MiBand3(Peripheral):
     _KEY = b'\x01\x23\x45\x67\x89\x01\x22\x23\x34\x45\x56\x67\x78\x89\x90\x02'

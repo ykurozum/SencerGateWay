@@ -15,7 +15,7 @@ DB_FILE = 'midata.db'
 RUN_HOME = os.environ.get("MI_HOME")
 if RUN_HOME != None :
     RUN_HOME = re.sub( "/$", "", RUN_HOME)
-    DEVICE_FILE = RUN_HOME + "/"+ DEVICE_FILE 
+    DEVICE_FILE = RUN_HOME + "/"+ DEVICE_FILE
     DB_FILE = RUN_HOME + "/"+ DB_FILE
 
 print(    DEVICE_FILE )
@@ -23,13 +23,13 @@ print(    DB_FILE  )
 
 def hexbin2dttm( hexbin, sidx ):
     hex = binascii.b2a_hex( hexbin )
-    yyStr  = str(hex)[sidx+2:sidx+4] + str(hex)[sidx:sidx+2] 
-    yy  = int( str(hex)[sidx+2:sidx+4] + str(hex)[sidx:sidx+2], 16 ) 
-    mm  = int( str(hex)[sidx+4:sidx+6], 16) 
-    dd  = int( str(hex)[sidx+6:sidx+8], 16)   
-    hh  = int( str(hex)[sidx+8:sidx+10], 16)   
-    MM  = int( str(hex)[sidx+10:sidx+12], 16)   
-    ss  = int( str(hex)[sidx+12:sidx+14], 16) 
+    yyStr  = str(hex)[sidx+2:sidx+4] + str(hex)[sidx:sidx+2]
+    yy  = int( str(hex)[sidx+2:sidx+4] + str(hex)[sidx:sidx+2], 16 )
+    mm  = int( str(hex)[sidx+4:sidx+6], 16)
+    dd  = int( str(hex)[sidx+6:sidx+8], 16)
+    hh  = int( str(hex)[sidx+8:sidx+10], 16)
+    MM  = int( str(hex)[sidx+10:sidx+12], 16)
+    ss  = int( str(hex)[sidx+12:sidx+14], 16)
     dttm = datetime.datetime( yy, mm, dd, hh, MM, ss, 0)
     return dttm
 
@@ -66,9 +66,9 @@ def dttm2hexEndianBin( dttm ):
     return b
 
 def dumpDataPool( datapool ):
-    print str( datapool["StartDttm"] )
+    print( str( datapool["StartDttm"] ))
     for payload in datapool["payload"]:
-        print payload
+        print( payload)
 
 def splitDataPool( datapool ):
     resultDataPool = []
@@ -85,7 +85,7 @@ def splitDataPool( datapool ):
             hexPayload = devAddr + hexDttm + onePayload
             # print ( ">>>" + devAddr + ":" + hexDttm + ":" + onePayload + "<<<")
             resultDataPool.append( (devAddr, dataDttm, hexPayload) );
-            dataDttm = dataDttm + timedelta(minutes=1) 
+            dataDttm = dataDttm + timedelta(minutes=1)
             num = num + 1
     print( "Split count:"+ str( num ))
     print( "Split out lastDttm:"+ str( dataDttm ))
@@ -114,13 +114,13 @@ def insertDb( insertData ):
         #for row in ret.fetchall():
         #    print "'%s'" % row[0], row[1], type(row[1])
         #--
-    except Exception, e:
-        print e
+    except Exception as e:
+        print( e)
         conn.rollback()
     finally:
         conn.close()
     print( "InsertData out")
-    
+
 def selectDb( DevAddr, StartDttm ):
     result = []
     try:
@@ -131,8 +131,8 @@ def selectDb( DevAddr, StartDttm ):
         for row in ret.fetchall():
             result.append( (row[0], row[1], row[2] ) )
         #--
-    except Exception, e:
-        print e
+    except Exception as e:
+        print( e)
         if conn: conn.rollback()
     finally:
         if conn: conn.close()
@@ -144,14 +144,14 @@ def deleteDb( DevAddr, LastDttm ):
         ( conn, cur) = initDb()
         ret = cur.execute("DELETE FROM mi_payload where devaddr = '"+ DevAddr + "' AND dttm <= '"+LastDttm+"';")
         conn.commit()
-    except Exception, e:
-        print e
+    except Exception as e:
+        print (e)
         if conn: conn.rollback()
     finally:
         if conn: conn.close()
     return result
 
- 
+
 # getDeviceList
 def getDeviceList():
     devFile = open( DEVICE_FILE )
