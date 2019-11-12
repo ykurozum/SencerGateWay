@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# coding: utf-8
-
 import sys
 from auth3 import MiBand3
 from cursesmenu import *
@@ -14,28 +11,28 @@ import os
 import binascii
 import utils
 import struct
-import urllib.request
 
-LOOP_INTERVAL = 10
+READ_INTERVAL_SEC = 10
+LOOP_INTERVAL = 5
 
 def call_immediate():
-    print('Sending Call Alert')
+    print 'Sending Call Alert'
     time.sleep(1)
     band.send_alert(ALERT_TYPES.PHONE)
 
 def msg_immediate():
-    print('Sending Message Alert')
+    print 'Sending Message Alert'
     time.sleep(1)
     band.send_alert(ALERT_TYPES.MESSAGE)
 
 def detail_info():
-    print('MiBand')
-    print('Soft revision:',band.get_revision())
-    print('Hardware revision:',band.get_hrdw_revision())
-    print('Serial:',band.get_serial())
-    print('Battery:', band.get_battery_info())
-    print('Time:', band.get_current_time())
-    print('Steps:', band.get_steps())
+    print 'MiBand'
+    print 'Soft revision:',band.get_revision()
+    print 'Hardware revision:',band.get_hrdw_revision()
+    print 'Serial:',band.get_serial()
+    print 'Battery:', band.get_battery_info()
+    print 'Time:', band.get_current_time()
+    print 'Steps:', band.get_steps()
     raw_input('Press Enter to continue')
 
 def custom_message():
@@ -49,7 +46,7 @@ def custom_missed_call():
     band.send_custom_alert(4)
 
 def l(x):
-    print('Realtime heart BPM:', x)
+    print 'Realtime heart BPM:', x
 
 def heart_beat():
     band.start_raw_data_realtime(heart_measure_callback=l)
@@ -65,9 +62,15 @@ def updateFirmware():
 #def handleNotification(self, cHandle, data):
  #if cHandle == 0x0041:
   #c_data = binascii.b2a_hex(data)
- #print(c_data
+ #print c_data
 
 def startGetData( MAC_ADDR, datapool, getStartBin):
+    #band = MiBand3(MAC_ADDR, debug=True, datapool=datapool)
+    #band.setSecurityLevel(level = "high")
+    #if band.initialize():
+    #    print("Initialized...")
+    #    band.disconnect()
+
     band = MiBand3(MAC_ADDR, debug=True, datapool=datapool)
     band.setSecurityLevel(level = "high")
 
@@ -75,8 +78,8 @@ def startGetData( MAC_ADDR, datapool, getStartBin):
     band.authenticate()
 
     # get Mi Band3 time
-    dateandtime = band.readCharacteristic(0x002f)
-    # utils.hexbin2dttm( dateandtime, 0)
+    mibandtime = band.readCharacteristic(0x002f)
+    midttm = utils.hexbin2dttm( mibandtime, 0)
 
     band.writeCharacteristic(0x0051, "\x01\x00", False)
     # insert sleep when low down 100204
@@ -112,7 +115,7 @@ def startGetData( MAC_ADDR, datapool, getStartBin):
             if band.waitForNotifications(0.5) == False:
                 break
     except KeyboardInterrupt:
-        print("Catch Interrupt: disconnect")
+        print "Catch Interrupt: disconnect"
     finally:
         # utils.dumpDataPool( band.datapool )
         band.disconnect()
@@ -120,69 +123,57 @@ def startGetData( MAC_ADDR, datapool, getStartBin):
 def sleepLoop():
     for i in range( LOOP_INTERVAL ):
         time.sleep( 1 )
-        print( "loop "+str(i))
-
-'''
-データ送信
-'''
-def sendData(url, addr, body):
-
-    try:
-        headers = {
-            'Content-Type': 'application/json',
-        }
-        print("send:\n" + body)
-
-        req = urllib.request.Request(url, body.encode(), headers)
-        with urllib.request.urlopen(req) as res:
-            content = res.read()
-
-        print("receive:\n" + content.decode('sjis'))
-
-    except urllib.error.HTTPError as err:
-        print("error: " + str(err.code) + " " + err.reason)
-    except urllib.error.URLError as err:
-        print("error: " +  err.reason)
-    except (Error, Exception) as err:
-        print("error: " + err)
+        print( "wait "+str(i))
 
 #--------------------------------------------
-if len(sys.argv) > 2:
-    if band.initialize():
-        print("Initialized...")
-        band.disconnect()
-else:
-    MAC_ADDR = sys.argv[1]
-    print('Attempting to connect to ', MAC_ADDR)
+def startRead( MAC_ADDR, lastDttm ):
 
-    # 転送URL
-    HOST = "http://192.168.10.199:1880/test"
+    print 'Attempting to connect to ', MAC_ADDR
 
-    lastDttm = datetime.datetime(2019, 8, 12, 0, 0, 0 )
-    while True:
+    for retry in xrange(5):
         status = 0
+        print("getStartDttm:"+ str( lastDttm ) )
+        lastDttmHexBin = utils.dttm2hexEndianBin( lastDttm )
+        datapool = {"status":"" ,  "StartDttm":"", "LastDttm":"", "payload":[], "DeviceAddress":"" }
         try:
-            print("getStartDttm:"+ str( lastDttm ) )
-            lastDttmHexStr = utils.dttm2hexEndianStr0x( lastDttm )
-            getStartDttmStr = ""
-            datapool = {"status":"" ,  "StartDttm":"", "LastDttm":"", "payload":[], "DeviceAddress":"" }
-            startGetData( MAC_ADDR, datapool, lastDttmHexStr)
+            startGetData( MAC_ADDR, datapool, lastDttmHexBin)
             status = datapool["status"]
-            print( "ResultStatus:"+status )
-            if( status == "100201" ):
-                bodies = utils.splitDataPool( datapool )
-                 for body in bodies
-                     sendData(HOST, body)
-                print("step1)")
-                print("LastDttm in data pool:"+ str( lastDttm ) )
-                lastDttm = lastDttm + timedelta(minutes=1)
-                print("step2)")
-        except KeyboardInterrupt:
-            print ( "Interrupt catch!!" )
-            break
-        except :
-            print ( sys.exc_info() )
-        if( status != "100204" ):
-            sleepLoop()
-    sys.exit(0)
+            print( "ResultStatus:"+str( status ) )
+        except:
+            status = -1
+            print( "ResultStatus:"+str( status ) )
 
+        if( status == "100201" ):
+            ( lastDttm, result ) = utils.splitDataPool( datapool )
+#             utils.insertDb( result )
+            print("LastDttm in data pool:"+ str( lastDttm ) )
+            lastDttm = lastDttm + timedelta(minutes=1)
+            return lastDttm
+        else:
+            # Retry
+            sleepLoop()
+
+#-------------------------
+while True:
+    try:
+        # Read Device List
+        devices = utils.getDeviceList()
+        # Loop of Device List
+        for deviceInfo in devices:
+            MAC_ADDR = deviceInfo[0]
+            lastReadDttm = utils.getLastReadDttmByMACADDR( MAC_ADDR )
+            print ("MAC_ADDR:"+ MAC_ADDR + " lastStartRead:"+str(lastReadDttm) )
+            lastDttm = startRead( MAC_ADDR, lastReadDttm )
+            print (" lastEndRead:"+str(lastDttm) )
+            if ( lastDttm != None ):
+                utils.saveLastReadDttmByMACADDR( MAC_ADDR, lastDttm )
+            sleepLoop()
+
+        # Read Interval
+        time.sleep( READ_INTERVAL_SEC )
+    except KeyboardInterrupt:
+        print ( "Interrupt catch!!" )
+        break
+    except:
+        print ( sys.exc_info() )
+sys.exit(0)
