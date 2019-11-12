@@ -74,7 +74,7 @@ def updateFirmware():
 '''
 受信
 '''
-def startGetData( MAC_ADDR, datapool, getStartBin):
+def startGetData(MAC_ADDR, datapool, getStartBin):
     #band = MiBand3(MAC_ADDR, debug=True, datapool=datapool)
     #band.setSecurityLevel(level = "high")
     #if band.initialize():
@@ -89,7 +89,7 @@ def startGetData( MAC_ADDR, datapool, getStartBin):
 
     # get Mi Band3 time
     mibandtime = band.readCharacteristic(0x002f)
-    midttm = utils.hexbin2dttm( mibandtime, 0)
+    midttm = utils.hexbin2dttm(mibandtime, 0)
 
     band.writeCharacteristic(0x0051, "\x01\x00", False)
     # insert sleep when low down 100204
@@ -127,7 +127,7 @@ def startGetData( MAC_ADDR, datapool, getStartBin):
     except KeyboardInterrupt:
         print("Catch Interrupt: disconnect")
     finally:
-        # utils.dumpDataPool( band.datapool )
+        # utils.dumpDataPool(band.datapool)
         band.disconnect()
 
 '''
@@ -136,35 +136,35 @@ def startGetData( MAC_ADDR, datapool, getStartBin):
 def sleepLoop():
     print("waiting...")
     time.sleep(LOOP_INTERVAL)
-#     for i in range( LOOP_INTERVAL ):
-#         time.sleep( 1 )
-#         print( "wait "+str(i))
+#     for i in range(LOOP_INTERVAL):
+#         time.sleep(1)
+#         print("wait "+str(i))
 
 '''
 データ受信
 '''
-def startRead( MAC_ADDR, lastDttm ):
+def startRead(MAC_ADDR, lastDttm):
 
     print('Attempting to connect to ', MAC_ADDR)
 
     for retry in range(5):
         status = 0
-        print("getStartDttm:"+ str( lastDttm ) )
-        lastDttmHexBin = utils.dttm2hexEndianBin( lastDttm )
+        print("getStartDttm:"+ str(lastDttm))
+        lastDttmHexBin = utils.dttm2hexEndianBin(lastDttm)
         datapool = {"status":"" ,  "StartDttm":"", "LastDttm":"", "payload":[], "DeviceAddress":"" }
         try:
             # 受信
-            startGetData( MAC_ADDR, datapool, lastDttmHexBin)
+            startGetData(MAC_ADDR, datapool, lastDttmHexBin)
             status = datapool["status"]
-            print( "ResultStatus:"+str( status ) )
+            print("ResultStatus:"+str(status))
         except:
             status = -1
-            print( "ResultStatus:"+str( status ) )
+            print("ResultStatus:"+str(status))
 
-        if( status == "100201" ):
+        if(status == "100201"):
             # ペイロード分割
-            result = utils.splitDataPool( datapool )
-            print("LastDttm in data pool:"+ str( lastDttm ) )
+            result = utils.splitDataPool(datapool)
+            print("LastDttm in data pool:"+ str(lastDttm))
             return (lastDttm, result)
         else:
             # Retry
@@ -224,28 +224,27 @@ if __name__ == '__main__':
             for deviceInfo in devices:
                 # アドレス
                 MAC_ADDR = deviceInfo[0]
-    #             lastReadDttm = utils.getLastReadDttmByMACADDR( MAC_ADDR )
-                dttm = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).strftime("%Y-%m-%d %H:%M:%S")
-                lastReadDttm = datetime.datetime.strptime( dttm, '%Y-%m-%d %H:%M:%S')
-                print ("MAC_ADDR:"+ MAC_ADDR + " lastStartRead:"+str(lastReadDttm) )
+                # 受信日時
+                lastReadDttm = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+                print("MAC_ADDR:"+ MAC_ADDR + " lastStartRead:"+str(lastReadDttm))
 
                 # 受信
-                result = startRead( MAC_ADDR, lastReadDttm )
+                result = startRead(MAC_ADDR, lastReadDttm)
                 lastDttm = result[0]
-                print (" lastEndRead:"+str(lastDttm) )
+                print(" lastEndRead:"+str(lastDttm))
 
                 # 送信
                 for data in result[1]:
                     sendData(HOST, MAC_ADDR, data)
 
                 # 待ち
-#                 sleepLoop()
+                sleepLoop()
 
             # Read Interval
-#             time.sleep( READ_INTERVAL_SEC )
+            time.sleep(READ_INTERVAL_SEC)
         except KeyboardInterrupt:
-            print ( "Interrupt catch!!" )
+            print("Interrupt catch!!")
             break
         except:
-            print ( sys.exc_info() )
+            print(sys.exc_info())
     sys.exit(0)

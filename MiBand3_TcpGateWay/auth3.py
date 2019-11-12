@@ -57,7 +57,7 @@ class AuthenticationDelegate(DefaultDelegate):
         elif hnd == 0x41:
             hexPayloadStr = str(data.encode("hex"))
             # print "01>" + hexPayloadStr + " len:" + str(len(data))
-            self.device.datapool["payload"].append( hexPayloadStr )
+            self.device.datapool["payload"].append(hexPayloadStr)
             self.idx = self.idx +1
         #Value
         elif hnd == 0x3e:
@@ -67,9 +67,9 @@ class AuthenticationDelegate(DefaultDelegate):
                 self.device.datapool["status"] = hexStr
             elif hexStr == "100204":
                 self.device.datapool["status"] = hexStr
-            elif hexStr.startswith( "100101" ):
+            elif hexStr.startswith("100101"):
                 # add cisco. may be top of data time
-                startDttm = utils.hexbin2dttm( data, 14 )
+                startDttm = utils.hexbin2dttm(data, 14)
                 self.device.datapool["StartDttm"] =  startDttm
             else:
                 self.device.datapool["status"] = hexStr
