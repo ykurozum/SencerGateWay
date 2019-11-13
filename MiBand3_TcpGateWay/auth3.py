@@ -26,6 +26,9 @@ class AuthenticationDelegate(DefaultDelegate):
     def peri(self):
         bluepy.btle.Peripheral(self)
 
+    '''
+    受信用コールバック
+    '''
     def handleNotification(self, hnd, data):
         if hnd == self.device._char_auth.getHandle():
             if data[:3] == b'\x10\x01\x01':
@@ -160,7 +163,7 @@ class MiBand3(Peripheral):
 
     def _parse_raw_accel(self, bytes):
         res = []
-        for i in xrange(3):
+        for i in range(3):
             g = struct.unpack('hhh', bytes[2 + i * 6:8 + i * 6])
             res.append({'x': g[0], 'y': g[1], 'wtf': g[2]})
         return res
