@@ -160,7 +160,7 @@ def startRead(MAC_ADDR, lastDttm):
 
 def getAddr(addr):
     temp = addr.replace(":","")
-    return temp[len(temp)-6:]
+    return temp
 
 def sendData(url, addr, dttm, data):
 

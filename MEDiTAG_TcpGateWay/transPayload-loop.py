@@ -46,8 +46,7 @@ def getData(device):
 def getAddr(addr):
     # 結合文字削除
     temp = addr.replace(":","")
-    # 下位6文字
-    return temp[len(temp)-6:]
+    return temp
 
 '''
 ログ出力
