@@ -71,6 +71,7 @@ def sendData(url, addr, data):
     body = json.dumps(d, cls = BaseJSONEncoder, sort_keys = True)
 
     try:
+        # POST
         headers = {
             'Content-Type': 'application/json',
         }
@@ -79,6 +80,16 @@ def sendData(url, addr, data):
         req = urllib.request.Request(url, body.encode(), headers)
         with urllib.request.urlopen(req) as res:
             content = res.read()
+
+        # GET
+#         print("send:\n" + body)
+#
+#         params = {
+#             body
+#         }
+#         req = urllib.request.Request('{}?{}'.format(url, urllib.parse.urlencode(params)))
+#         with urllib.request.urlopen(req) as res:
+#             content = res.read()
 
         print("receive:\n" + content.decode('sjis'))
 
