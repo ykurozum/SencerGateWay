@@ -3,7 +3,7 @@ import time
 import logging
 from datetime import datetime
 from Crypto.Cipher import AES
-from queue import Queue, Empty
+from Queue import Queue, Empty
 from bluepy.btle import Peripheral, DefaultDelegate, ADDR_TYPE_RANDOM, BTLEException
 import crc16
 import os
@@ -26,9 +26,6 @@ class AuthenticationDelegate(DefaultDelegate):
     def peri(self):
         bluepy.btle.Peripheral(self)
 
-    '''
-    受信用コールバック
-    '''
     def handleNotification(self, hnd, data):
         if hnd == self.device._char_auth.getHandle():
             if data[:3] == b'\x10\x01\x01':

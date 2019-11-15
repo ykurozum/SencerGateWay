@@ -62,9 +62,6 @@ class DevEUI_uplink(Base):
 
 
 class Data(Base):
-    '''
-    送信データ
-    '''
     def __init__(self):
         '''
         Constructor

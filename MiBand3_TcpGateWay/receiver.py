@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# coding: utf-8
-
 import sys
 from auth3 import MiBand3
 from cursesmenu import *
@@ -8,7 +5,7 @@ from cursesmenu.items import *
 from constants import ALERT_TYPES
 from bluepy.btle import Peripheral
 import datetime
-from datetime import timedelta
+import pytz
 import time
 import os
 import binascii
@@ -16,7 +13,8 @@ import utils
 import struct
 import json
 import configparser
-import urllib.request
+import urllib
+import urllib2
 from data import Data
 from base import BaseJSONEncoder
 
@@ -72,9 +70,6 @@ def updateFirmware():
   #c_data = binascii.b2a_hex(data)
  #print(c_data)
 
-'''
-受信
-'''
 def startGetData(MAC_ADDR, datapool, getStartBin):
     #band = MiBand3(MAC_ADDR, debug=True, datapool=datapool)
     #band.setSecurityLevel(level = "high")
@@ -92,7 +87,7 @@ def startGetData(MAC_ADDR, datapool, getStartBin):
     mibandtime = band.readCharacteristic(0x002f)
     midttm = utils.hexbin2dttm(mibandtime, 0)
 
-    band.writeCharacteristic(0x0051, "\x01\x00", False)
+    band.writeCharacteristic(0x0051, b"\x01\x00", False)
     # insert sleep when low down 100204
     time.sleep(0.24)
     band.writeCharacteristic(0x005b, "\x01\x00", False)
@@ -118,6 +113,7 @@ def startGetData(MAC_ADDR, datapool, getStartBin):
     #
     # getStr = "\x01\x01\xe3\x07\x07\x1e\x12\x00\x00\x24"
     # getStartBin = b'\x01\x01\xe3\x07\x07\x1e\x12\x00\x00\x24'
+    # TODO
     band.writeCharacteristic(0x003e, getStartBin, False)
     band.writeCharacteristic(0x003e, "\x02", False)
 
@@ -131,9 +127,6 @@ def startGetData(MAC_ADDR, datapool, getStartBin):
         # utils.dumpDataPool(band.datapool)
         band.disconnect()
 
-'''
-スリープ
-'''
 def sleepLoop():
     print("waiting...")
     time.sleep(LOOP_INTERVAL)
@@ -141,20 +134,15 @@ def sleepLoop():
 #         time.sleep(1)
 #         print("wait "+str(i))
 
-'''
-データ受信
-'''
 def startRead(MAC_ADDR, lastDttm):
 
     print('Attempting to connect to ', MAC_ADDR)
 
     for retry in range(5):
         status = 0
-        print("getStartDttm:"+ str(lastDttm))
         lastDttmHexBin = utils.dttm2hexEndianBin(lastDttm)
         datapool = {"status":"" ,  "StartDttm":"", "LastDttm":"", "payload":[], "DeviceAddress":"" }
         try:
-            # 受信
             startGetData(MAC_ADDR, datapool, lastDttmHexBin)
             status = datapool["status"]
             print("ResultStatus:"+str(status))
@@ -163,7 +151,6 @@ def startRead(MAC_ADDR, lastDttm):
             print("ResultStatus:"+str(status))
 
         if(status == "100201"):
-            # ペイロード分割
             result = utils.splitDataPool(datapool)
             print("LastDttm in data pool:"+ str(lastDttm))
             return (lastDttm, result)
@@ -171,23 +158,16 @@ def startRead(MAC_ADDR, lastDttm):
             # Retry
             sleepLoop()
 
-'''
-アドレス取得
-'''
 def getAddr(addr):
-    # 結合文字削除
     temp = addr.replace(":","")
-    # 下位6文字
     return temp[len(temp)-6:]
 
-'''
-データ送信
-'''
-def sendData(url, addr, data):
+def sendData(url, addr, dttm, data):
 
     d = Data()
-    d.DevEUI_uplink.DevAddr = getAddr(addr)
-    d.DevEUI_uplink.Time = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).strftime("%Y-%m-%dT%H:%M:%S%z")
+    d.DevEUI_uplink.DevAddr = addr
+    d.DevEUI_uplink.DevEUI = getAddr(addr)
+    d.DevEUI_uplink.Time = dttm.strftime("%Y-%m-%dT%H:%M:%S%z")
     d.DevEUI_uplink.payload_hex = data
     body = json.dumps(d, cls = BaseJSONEncoder, sort_keys = True)
 
@@ -197,30 +177,25 @@ def sendData(url, addr, data):
         }
         print("send:\n" + body)
 
-        req = urllib.request.Request(url, body.encode(), headers)
-        with urllib.request.urlopen(req) as res:
-            content = res.read()
+        req = urllib2.Request(url, body, headers)
+        res = urllib2.urlopen(req)
+        content = res.read()
 
         print("receive:\n" + content.decode('sjis'))
 
-    except urllib.error.HTTPError as err:
+    except urllib2.HTTPError as err:
         print("error: " + str(err.code) + " " + err.reason)
-    except urllib.error.URLError as err:
+    except urllib2.URLError as err:
         print("error: " +  err.reason)
-    except (Error, Exception) as err:
-        print("error: " + err)
+    except Exception as err:
+        print(err)
 
-'''
-メイン処理
-'''
 if __name__ == '__main__':
 
-    # 設定読み込み
     configParser = configparser.ConfigParser()
     configParser.read("config.ini")
     config = configParser["config"]
 
-    # 転送URL
     HOST = config["host"]
     print("HOST = " + HOST)
 
@@ -232,22 +207,18 @@ if __name__ == '__main__':
 
             # Loop of Device List
             for deviceInfo in devices:
-                # アドレス
                 MAC_ADDR = deviceInfo[0]
-                # 受信日時
-                lastReadDttm = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+                lastReadDttm = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
                 print("MAC_ADDR:"+ MAC_ADDR + " lastStartRead:"+str(lastReadDttm))
 
-                # 受信
-                result = startRead(MAC_ADDR, lastReadDttm)
-                lastDttm = result[0]
+                (lastDttm, dataList) = startRead(MAC_ADDR, lastReadDttm)
+
                 print("lastEndRead:"+str(lastDttm))
+                print(dataList)
 
-                # 送信
-                for data in result[1]:
-                    sendData(HOST, MAC_ADDR, data)
+                for data in dataList:
+                    sendData(HOST, MAC_ADDR, lastReadDttm, data)
 
-                # 待ち
                 sleepLoop()
 
             # Read Interval
