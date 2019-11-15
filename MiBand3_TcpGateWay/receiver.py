@@ -162,13 +162,26 @@ def getAddr(addr):
     temp = addr.replace(":","")
     return temp
 
+def dttm2hexStr( dttm ):
+    yyyy = ( str( hex( dttm.year)   )[2:].zfill(4) )
+    mm   = ( str( hex( dttm.month)  )[2:].zfill(2) )
+    dd   = ( str( hex( dttm.day)    )[2:].zfill(2) )
+    hh   = ( str( hex( dttm.hour)   )[2:].zfill(2) )
+    MM   = ( str( hex( dttm.minute) )[2:].zfill(2) )
+    hexDttm = yyyy+mm+dd+hh+MM
+    return hexDttm
+
+def getPayload(addr, dttm, data):
+    return addr + dttm2hexStr(dttm) + data
+
+
 def sendData(url, addr, dttm, data):
 
     d = Data()
     d.DevEUI_uplink.DevAddr = addr
     d.DevEUI_uplink.DevEUI = getAddr(addr)
     d.DevEUI_uplink.Time = dttm.strftime("%Y-%m-%dT%H:%M:%S%z")
-    d.DevEUI_uplink.payload_hex = data
+    d.DevEUI_uplink.payload_hex = getPayload(d.DevEUI_uplink.DevEUI, dttm, data)
     body = json.dumps(d, cls = BaseJSONEncoder, sort_keys = True)
 
     try:
