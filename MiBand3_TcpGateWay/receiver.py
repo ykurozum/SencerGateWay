@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import sys
 from auth3 import MiBand3
 from cursesmenu import *
@@ -7,16 +9,13 @@ from bluepy.btle import Peripheral
 import datetime
 import pytz
 import time
-import os
-import binascii
 import utils
-import struct
 import json
 import configparser
-import urllib
 import urllib2
 from data import Data
 from base import BaseJSONEncoder
+import traceback
 
 READ_INTERVAL_SEC = 10
 LOOP_INTERVAL = 5
@@ -70,6 +69,9 @@ def updateFirmware():
   #c_data = binascii.b2a_hex(data)
  #print(c_data)
 
+'''
+データ受信
+'''
 def startGetData(MAC_ADDR, datapool, getStartBin):
     #band = MiBand3(MAC_ADDR, debug=True, datapool=datapool)
     #band.setSecurityLevel(level = "high")
@@ -81,6 +83,7 @@ def startGetData(MAC_ADDR, datapool, getStartBin):
     band.setSecurityLevel(level = "high")
 
     # Authenticate the MiBand
+    # 受信用コールバック設定
     band.authenticate()
 
     # get Mi Band3 time
@@ -130,13 +133,13 @@ def startGetData(MAC_ADDR, datapool, getStartBin):
 def sleepLoop():
     print("waiting...")
     time.sleep(LOOP_INTERVAL)
-#     for i in range(LOOP_INTERVAL):
-#         time.sleep(1)
-#         print("wait "+str(i))
 
+'''
+スキャンと受信
+'''
 def startRead(MAC_ADDR, lastDttm):
 
-    print('Attempting to connect to ', MAC_ADDR)
+    print('Attempting to connect to ' + MAC_ADDR)
 
     for retry in range(5):
         status = 0
@@ -158,10 +161,18 @@ def startRead(MAC_ADDR, lastDttm):
             # Retry
             sleepLoop()
 
+    return (None, None)
+
+'''
+送信用アドレス変換
+'''
 def getAddr(addr):
     temp = addr.replace(":","")
     return temp
 
+'''
+送信用日時変換
+'''
 def dttm2hexStr( dttm ):
     yyyy = ( str( hex( dttm.year)   )[2:].zfill(4) )
     mm   = ( str( hex( dttm.month)  )[2:].zfill(2) )
@@ -171,12 +182,18 @@ def dttm2hexStr( dttm ):
     hexDttm = yyyy+mm+dd+hh+MM
     return hexDttm
 
+'''
+送信用ペイロード生成
+'''
 def getPayload(addr, dttm, data):
     return addr + dttm2hexStr(dttm) + data
 
-
+'''
+データ送信
+'''
 def sendData(url, addr, dttm, data):
 
+    # 送信JSON生成
     d = Data()
     d.DevEUI_uplink.DevAddr = addr
     d.DevEUI_uplink.DevEUI = getAddr(addr)
@@ -185,15 +202,16 @@ def sendData(url, addr, dttm, data):
     body = json.dumps(d, cls = BaseJSONEncoder, sort_keys = True)
 
     try:
+        # 送信
         headers = {
             'Content-Type': 'application/json',
         }
         print("send:\n" + body)
-
         req = urllib2.Request(url, body, headers)
         res = urllib2.urlopen(req)
-        content = res.read()
 
+        # 応答
+        content = res.read()
         print("receive:\n" + content.decode('sjis'))
 
     except urllib2.HTTPError as err:
@@ -203,6 +221,9 @@ def sendData(url, addr, dttm, data):
     except Exception as err:
         print(err)
 
+'''
+メイン処理
+'''
 if __name__ == '__main__':
 
     configParser = configparser.ConfigParser()
@@ -212,23 +233,34 @@ if __name__ == '__main__':
     HOST = config["host"]
     print("HOST = " + HOST)
 
+    DEVICE_FILE = 'devices.csv'
+    print("device list = " + DEVICE_FILE)
+
     while True:
         try:
 
             # Read Device List
-            devices = utils.getDeviceList()
+            devices = utils.getDeviceList(DEVICE_FILE)
 
             # Loop of Device List
             for deviceInfo in devices:
+                # アドレス
                 MAC_ADDR = deviceInfo[0]
+                # 受信日時
                 lastReadDttm = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
                 print("MAC_ADDR:"+ MAC_ADDR + " lastStartRead:"+str(lastReadDttm))
 
+                # 受信
                 (lastDttm, dataList) = startRead(MAC_ADDR, lastReadDttm)
+
+                if lastDttm is None or dataList is None:
+                    print("failed to receivee data")
+                    continue
 
                 print("lastEndRead:"+str(lastDttm))
                 print(dataList)
 
+                # 送信
                 for data in dataList:
                     sendData(HOST, MAC_ADDR, lastReadDttm, data)
 
@@ -240,5 +272,5 @@ if __name__ == '__main__':
             print("Interrupt catch!!")
             break
         except:
-            print(sys.exc_info())
+            print(traceback.format_exc())
     sys.exit(0)

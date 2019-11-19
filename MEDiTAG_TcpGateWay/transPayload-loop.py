@@ -11,6 +11,7 @@ from logging import basicConfig, getLogger, DEBUG
 from data import Data
 from base import BaseJSONEncoder
 import configparser
+import traceback
 
 # デバイスリスト
 deviceList = {}
@@ -69,16 +70,17 @@ def sendData(url, addr, data):
     d.DevEUI_uplink.payload_hex = data
     body = json.dumps(d, cls = BaseJSONEncoder, sort_keys = True)
 
-    try:
-        # POST
-        headers = {
-            'Content-Type': 'application/json',
-        }
-        print("send:\n" + body)
+    # POST
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    print("send:\n" + body)
 
-        req = urllib.request.Request(url, body.encode(), headers)
-        with urllib.request.urlopen(req) as res:
-            content = res.read()
+    req = urllib.request.Request(url, body.encode(), headers)
+    res = urllib.request.urlopen(req)
+    print("status: " + res.getcode())
+#         with urllib.request.urlopen(req) as res:
+#             content = res.read()
 
         # GET
 #         print("send:\n" + body)
@@ -90,17 +92,7 @@ def sendData(url, addr, data):
 #         with urllib.request.urlopen(req) as res:
 #             content = res.read()
 
-        print("receive:\n" + content.decode('sjis'))
-
-    except urllib.error.HTTPError as err:
-        print("error: " + str(err.code) + " " + err.reason)
-        log(LOG_DIR_PATH, "error: " + body)
-    except urllib.error.URLError as err:
-        print("error: " +  err.reason)
-        log(LOG_DIR_PATH, "error: " + body)
-    except (Error, Exception) as err:
-        print("error: " + err)
-        log(LOG_DIR_PATH, "error: " + body)
+#         print("receive:\n" + content.decode('sjis'))
 
 '''
 メイン
@@ -146,31 +138,35 @@ if __name__ == '__main__':
 
     while True:
 
-        logdate = datetime.datetime.today().strftime("%Y%m%d")
+        try:
+            logdate = datetime.datetime.today().strftime("%Y%m%d")
 
-        # アドレス取得用スキャン
-        # 対象UUIDのデバイスアドレス、RSSIを取得
-        iBeaconScanner = BeaconScanner(callback,
-        device_filter=IBeaconFilter(uuid=UUID))
-        iBeaconScanner.start()
-        time.sleep(SCAN_TIME)
-        iBeaconScanner.stop()
+            # アドレス取得用スキャン
+            # 対象UUIDのデバイスアドレス、RSSIを取得
+            iBeaconScanner = BeaconScanner(callback,
+            device_filter=IBeaconFilter(uuid=UUID))
+            iBeaconScanner.start()
+            time.sleep(SCAN_TIME)
+            iBeaconScanner.stop()
 
-        # スキャン結果が取得できなかった
-        if len(deviceList) == 0:
-           continue
+            # スキャン結果が取得できなかった
+            if len(deviceList) == 0:
+               continue
 
-        # データ取得用スキャン
-        devices = scanner.scan(SCAN_TIME)
+            # データ取得用スキャン
+            devices = scanner.scan(SCAN_TIME)
 
-        for addr in deviceList.keys():
+            for addr in deviceList.keys():
 
-            for device in devices:
+                for device in devices:
 
-                if device.addr == addr:
+                    if device.addr == addr:
 
-                    # データ取得
-                    data = getData(device)
-                    if (len(data) == PAYLOAD_LEN):
-                        # データ送信
-                        sendData(HOST, device.addr, data)
+                        # データ取得
+                        data = getData(device)
+                        if (len(data) == PAYLOAD_LEN):
+                            # データ送信
+                            sendData(HOST, device.addr, data)
+
+        except:
+            print(traceback.format_exc())

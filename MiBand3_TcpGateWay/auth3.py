@@ -1,4 +1,5 @@
-import struct
+# coding: utf-8
+
 import time
 import logging
 from datetime import datetime
@@ -18,6 +19,9 @@ class AuthenticationDelegate(DefaultDelegate):
 
     """This Class inherits DefaultDelegate to handle the authentication process."""
 
+    '''
+    コンストラクタ
+    '''
     def __init__(self, device):
         DefaultDelegate.__init__(self)
         self.device = device
@@ -26,6 +30,9 @@ class AuthenticationDelegate(DefaultDelegate):
     def peri(self):
         bluepy.btle.Peripheral(self)
 
+    '''
+    受信コールバック
+    '''
     def handleNotification(self, hnd, data):
         if hnd == self.device._char_auth.getHandle():
             if data[:3] == b'\x10\x01\x01':
@@ -80,6 +87,9 @@ class AuthenticationDelegate(DefaultDelegate):
                                    str(data.encode("hex")) + " len:" + str(len(data)))
             #self.disconnect()
 
+'''
+MiBand3
+'''
 class MiBand3(Peripheral):
     _KEY = b'\x01\x23\x45\x67\x89\x01\x22\x23\x34\x45\x56\x67\x78\x89\x90\x02'
     _send_key_cmd = struct.pack('<18s', b'\x01\x08' + _KEY)
@@ -87,15 +97,22 @@ class MiBand3(Peripheral):
     _send_enc_key = struct.pack('<2s', b'\x03\x08')
     datapool = {}
 
+    '''
+    コンストラクタ
+    '''
     def __init__(self, mac_address, timeout=0.5, debug=False, datapool={}):
+        # アドレス
         datapool["DeviceAddress"] = mac_address.replace(":","")
+        # 受信データ
         self.datapool = datapool
-        FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
+        # ログ設定
+        FORMAT = '%(asctime)-15s %(levelname)s %(name)s %(funcName)s:%(lineno)d %(message)s'
         logging.basicConfig(format=FORMAT)
         log_level = logging.WARNING if not debug else logging.DEBUG
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.setLevel(log_level)
 
+        # 接続
         self._log.info('Connecting to ' + mac_address)
         Peripheral.__init__(self, mac_address, addrType=ADDR_TYPE_RANDOM)
         self._log.info('Connected')
