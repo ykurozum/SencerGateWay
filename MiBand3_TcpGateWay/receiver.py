@@ -211,8 +211,7 @@ def sendData(url, addr, dttm, data):
         res = urllib2.urlopen(req)
 
         # 応答
-        content = res.read()
-        print("receive:\n" + content.decode('sjis'))
+        print("status: " + res.getcode())
 
     except urllib2.HTTPError as err:
         print("error: " + str(err.code) + " " + err.reason)
