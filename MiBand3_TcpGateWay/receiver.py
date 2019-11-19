@@ -150,6 +150,7 @@ def startRead(MAC_ADDR, lastDttm):
             status = datapool["status"]
             print("ResultStatus:"+str(status))
         except:
+            print(traceback.format_exc())
             status = -1
             print("ResultStatus:"+str(status))
 
