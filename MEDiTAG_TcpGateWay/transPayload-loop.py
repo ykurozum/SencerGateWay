@@ -78,7 +78,7 @@ def sendData(url, addr, data):
 
     req = urllib.request.Request(url, body.encode(), headers)
     res = urllib.request.urlopen(req)
-    print("status: " + res.getcode())
+    print("status: " + str(res.getcode()))
 #         with urllib.request.urlopen(req) as res:
 #             content = res.read()
 

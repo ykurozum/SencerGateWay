@@ -201,24 +201,16 @@ def sendData(url, addr, dttm, data):
     d.DevEUI_uplink.payload_hex = getPayload(d.DevEUI_uplink.DevEUI, dttm, data)
     body = json.dumps(d, cls = BaseJSONEncoder, sort_keys = True)
 
-    try:
-        # 送信
-        headers = {
-            'Content-Type': 'application/json',
-        }
-        print("send:\n" + body)
-        req = urllib2.Request(url, body, headers)
-        res = urllib2.urlopen(req)
+    # 送信
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    print("send:\n" + body)
+    req = urllib2.Request(url, body, headers)
+    res = urllib2.urlopen(req)
 
-        # 応答
-        print("status: " + res.getcode())
-
-    except urllib2.HTTPError as err:
-        print("error: " + str(err.code) + " " + err.reason)
-    except urllib2.URLError as err:
-        print("error: " +  err.reason)
-    except Exception as err:
-        print(err)
+    # 応答
+    print("status: " + str(res.getcode()))
 
 '''
 メイン処理
