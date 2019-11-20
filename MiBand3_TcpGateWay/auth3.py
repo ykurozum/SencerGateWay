@@ -1,5 +1,4 @@
-# coding: utf-8
-
+import struct
 import time
 import logging
 from datetime import datetime
@@ -19,9 +18,6 @@ class AuthenticationDelegate(DefaultDelegate):
 
     """This Class inherits DefaultDelegate to handle the authentication process."""
 
-    '''
-    コンストラクタ
-    '''
     def __init__(self, device):
         DefaultDelegate.__init__(self)
         self.device = device
@@ -30,9 +26,6 @@ class AuthenticationDelegate(DefaultDelegate):
     def peri(self):
         bluepy.btle.Peripheral(self)
 
-    '''
-    受信コールバック
-    '''
     def handleNotification(self, hnd, data):
         if hnd == self.device._char_auth.getHandle():
             if data[:3] == b'\x10\x01\x01':
@@ -62,21 +55,21 @@ class AuthenticationDelegate(DefaultDelegate):
                 self.device.queue.put((QUEUE_TYPES.RAW_HEART, data))
         #0x0041
         elif hnd == 0x41:
-            hexPayloadStr = str(data.encode("hex"))
+            hexPayloadStr = str(data.encode("hex")) 
             # print "01>" + hexPayloadStr + " len:" + str(len(data))
-            self.device.datapool["payload"].append(hexPayloadStr)
+            self.device.datapool["payload"].append( hexPayloadStr )
             self.idx = self.idx +1
         #Value
         elif hnd == 0x3e:
-            #self.disconnect()
+            #self.disconnect()             
             hexStr = str(data.encode("hex"))
-            if hexStr == "100201":
+            if hexStr == "100201": 
                 self.device.datapool["status"] = hexStr
             elif hexStr == "100204":
                 self.device.datapool["status"] = hexStr
-            elif hexStr.startswith("100101"):
+            elif hexStr.startswith( "100101" ):
                 # add cisco. may be top of data time
-                startDttm = utils.hexbin2dttm(data, 14)
+                startDttm = utils.hexbin2dttm( data, 14 )
                 self.device.datapool["StartDttm"] =  startDttm
             else:
                 self.device.datapool["status"] = hexStr
@@ -85,11 +78,8 @@ class AuthenticationDelegate(DefaultDelegate):
         else:
             self.device._log.error("06>Unhandled Response " + hex(hnd) + ": " +
                                    str(data.encode("hex")) + " len:" + str(len(data)))
-            #self.disconnect()
+            #self.disconnect() 
 
-'''
-MiBand3
-'''
 class MiBand3(Peripheral):
     _KEY = b'\x01\x23\x45\x67\x89\x01\x22\x23\x34\x45\x56\x67\x78\x89\x90\x02'
     _send_key_cmd = struct.pack('<18s', b'\x01\x08' + _KEY)
@@ -97,22 +87,15 @@ class MiBand3(Peripheral):
     _send_enc_key = struct.pack('<2s', b'\x03\x08')
     datapool = {}
 
-    '''
-    コンストラクタ
-    '''
     def __init__(self, mac_address, timeout=0.5, debug=False, datapool={}):
-        # アドレス
         datapool["DeviceAddress"] = mac_address.replace(":","")
-        # 受信データ
         self.datapool = datapool
-        # ログ設定
-        FORMAT = '%(asctime)-15s %(levelname)s %(name)s %(funcName)s:%(lineno)d %(message)s'
+        FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
         logging.basicConfig(format=FORMAT)
         log_level = logging.WARNING if not debug else logging.DEBUG
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.setLevel(log_level)
 
-        # 接続
         self._log.info('Connecting to ' + mac_address)
         Peripheral.__init__(self, mac_address, addrType=ADDR_TYPE_RANDOM)
         self._log.info('Connected')
@@ -177,7 +160,7 @@ class MiBand3(Peripheral):
 
     def _parse_raw_accel(self, bytes):
         res = []
-        for i in range(3):
+        for i in xrange(3):
             g = struct.unpack('hhh', bytes[2 + i * 6:8 + i * 6])
             res.append({'x': g[0], 'y': g[1], 'wtf': g[2]})
         return res
