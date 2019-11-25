@@ -18,8 +18,8 @@ if RUN_HOME != None :
     DEVICE_FILE = RUN_HOME + "/"+ DEVICE_FILE 
     DB_FILE = RUN_HOME + "/"+ DB_FILE
 
-print(    DEVICE_FILE )
-print(    DB_FILE  )
+print( "DeviceFile is :" +   DEVICE_FILE )
+print( "sqlite DB file:" +   DB_FILE  )
 
 def hexbin2dttm( hexbin, sidx ):
     hex = binascii.b2a_hex( hexbin )
@@ -150,6 +150,48 @@ def deleteDb( DevAddr, LastDttm ):
     finally:
         if conn: conn.close()
     return result
+
+def cmdDb( cmd ):
+    result = []
+    try:
+        ( conn, cur) = initDb()
+        ret = cur.execute( cmd )
+        for row in ret.fetchall():
+            # result.append( (row[0], row[1], row[2] ) )
+            result.append( row )
+        conn.commit()
+    except Exception, e:
+        print e
+        if conn: conn.rollback()
+    finally:
+        if conn: conn.close()
+    return result
+
+def infoDb():
+    print( "++++++++++++++++" )
+    try:
+        ( conn, cur) = initDb()
+        query = "select name from sqlite_master where type='table';"
+        ret = cur.execute( query )
+        tbls = []
+        for row in ret.fetchall():
+            tbls.append( row[0] )
+        # conn.commit()
+
+        for tbl in tbls:
+            print( "Table:" + tbl )
+            query = "PRAGMA table_info('"+tbl+"');"
+            ret = cur.execute( query )
+            for row in ret.fetchall():
+                print( "      :" + str(row[0]) + " " + row[1] +" "+ row[2])
+
+
+    except Exception, e:
+        print e
+        # if conn: conn.rollback()
+    finally:
+        if conn: conn.close()
+    return 
 
  
 # getDeviceList
