@@ -14,6 +14,7 @@ import struct
 
 READ_INTERVAL_SEC = 10
 LOOP_INTERVAL = 5
+RETRY_COUNT = 1
 
 def call_immediate():
     print 'Sending Call Alert'
@@ -121,18 +122,21 @@ def startGetData( MAC_ADDR, datapool, getStartBin):
         band.disconnect()
 
 def sleepLoop():
+    print( "wait for "+str(LOOP_INTERVAL) + "sec" ),
+    sys.stdout.flush()
     for i in range( LOOP_INTERVAL ):
         time.sleep( 1 )
-        print( "wait "+str(i))
+        print( "."),
+        sys.stdout.flush()
+    print( "")
 
 #--------------------------------------------
 def startRead( MAC_ADDR, lastDttm ):
 
-    print 'Attempting to connect to ', MAC_ADDR
+    # print 'Attempting to connect to ', MAC_ADDR
 
-    for retry in xrange(5):
+    for retry in xrange(RETRY_COUNT):
         status = 0
-        print("getStartDttm:"+ str( lastDttm ) )
         lastDttmHexBin = utils.dttm2hexEndianBin( lastDttm )
         datapool = {"status":"" ,  "StartDttm":"", "LastDttm":"", "payload":[], "DeviceAddress":"" }
         try:
@@ -150,8 +154,10 @@ def startRead( MAC_ADDR, lastDttm ):
             lastDttm = lastDttm + timedelta(minutes=1)
             return lastDttm
         else:
-            # Retry
-            sleepLoop()
+            if ( RETRY_COUNT > 1 ):
+                # Retry
+                print("Retry. "),
+                sleepLoop()
 
 #-------------------------
 while True:
@@ -162,10 +168,10 @@ while True:
         for deviceInfo in devices:
             MAC_ADDR = deviceInfo[0]
             lastReadDttm = utils.getLastReadDttmByMACADDR( MAC_ADDR )
-            print ("MAC_ADDR:"+ MAC_ADDR + " lastStartRead:"+str(lastReadDttm) )
+            print ("Connect to "+ MAC_ADDR + " lastStartRead:"+str(lastReadDttm) )
             lastDttm = startRead( MAC_ADDR, lastReadDttm )
-            print (" lastEndRead:"+str(lastDttm) )
             if ( lastDttm != None ):
+                print (" lastEndRead:"+str(lastDttm) )
                 utils.saveLastReadDttmByMACADDR( MAC_ADDR, lastDttm )
             sleepLoop()
 
