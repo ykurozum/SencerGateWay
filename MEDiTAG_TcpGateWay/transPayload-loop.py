@@ -106,6 +106,11 @@ if __name__ == '__main__':
     print("SCAN_TIME = " + str(SCAN_TIME))
     log(LOG_DIR_PATH, "SCAN_TIME = " + str(SCAN_TIME))
 
+    # スキャンInterval時間[秒]
+    SCAN_INTERVAL_TIME = config.getint("scan_interval_time")
+    print("SCAN_INTERVAL_TIME = " + str(SCAN_INTERVAL_TIME))
+    log(LOG_DIR_PATH, "SCAN_INTERVAL_TIME = " + str(SCAN_INTERVAL_TIME))
+
     # 転送URL
     HOST = config["host"]
     print("HOST = " + HOST)
@@ -155,6 +160,7 @@ if __name__ == '__main__':
                             # データ送信
                             sendData(HOST, device.addr, data)
 
+            time.sleep(SCAN_INTERVAL_TIME)
         except KeyboardInterrupt:
             print("Keybord Interrupt catch!")
             break
