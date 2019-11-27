@@ -1,7 +1,5 @@
 import sys
 from auth3 import MiBand3
-from cursesmenu import *
-from cursesmenu.items import *
 from constants import ALERT_TYPES
 from bluepy.btle import Peripheral
 import datetime
