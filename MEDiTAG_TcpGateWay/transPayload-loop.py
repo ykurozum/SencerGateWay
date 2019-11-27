@@ -142,6 +142,7 @@ if __name__ == '__main__':
             # データ取得用スキャン
             devices = scanner.scan(SCAN_TIME)
 
+
             for addr in deviceList.keys():
 
                 for device in devices:
@@ -154,5 +155,8 @@ if __name__ == '__main__':
                             # データ送信
                             sendData(HOST, device.addr, data)
 
+        except KeyboardInterrupt:
+            print("Keybord Interrupt catch!")
+            break
         except:
             print(traceback.format_exc())
