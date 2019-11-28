@@ -239,11 +239,19 @@ def saveLastSendDttmByMACADDR( MAC_ADDR, lastSendDttm ):
     saveLastDttmByMACADDR( MAC_ADDR, lastSendDttm, 2)
 
 def saveLastDttmByMACADDR( MAC_ADDR, lastDttm, idx ):
-    devices = getDeviceList()
+    # read devices file
+    rdevFile = open( DEVICE_FILE )
+    reader = csv.reader( rdevFile )
+    devices = []
+    for row in reader:
+        # read device list
+        devices.append( row )
+    rdevFile.close()
 
+    # open again. write mode
     devFile = open( DEVICE_FILE, 'w' )
     writer = csv.writer( devFile )
-    writer.writerow(['# DevAddr','LastRead','LastSend'])
+    # writer.writerow(['# DevAddr','LastRead','LastSend'])
     for row in devices:
         # read device list
         if row[0] == MAC_ADDR :
