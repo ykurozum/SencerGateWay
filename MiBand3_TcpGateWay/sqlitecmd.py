@@ -3,6 +3,7 @@
 import utils
 import sys
 
+utils.infoDb()
 while( True ):
     line = raw_input("sqlite>>")
     if ( line == 'quit' or line == 'exit' ):
