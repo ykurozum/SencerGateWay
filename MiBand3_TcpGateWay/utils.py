@@ -74,7 +74,7 @@ def splitDataPool( datapool ):
     resultDataPool = []
     startDttm = datapool["StartDttm"]
     dataDttm = startDttm
-    print( "Split in startDttm:"+ str( dataDttm ))
+    # print( "Split in startDttm:"+ str( dataDttm ))
     num = 0
     for payloadHex in datapool["payload"]:
         payload = payloadHex[2:]
@@ -87,8 +87,8 @@ def splitDataPool( datapool ):
             resultDataPool.append( (devAddr, dataDttm, hexPayload) );
             dataDttm = dataDttm + timedelta(minutes=1) 
             num = num + 1
-    print( "Split count:"+ str( num ))
-    print( "Split out lastDttm:"+ str( dataDttm ))
+    # print( "Split count:"+ str( num ))
+    # print( "Split out lastDttm:"+ str( dataDttm ))
     return ( dataDttm , resultDataPool )
 
 def create_table( conn, cur):
@@ -104,7 +104,7 @@ def initDb():
 
 #----
 def insertDb( insertData ):
-    print( "InsertData in ")
+    # print( "InsertData in ")
     try:
         ( conn, cur) = initDb()
         ret = cur.executemany("INSERT INTO mi_payload(devaddr, dttm, payload) values (?,?,?)" , insertData )
@@ -115,24 +115,24 @@ def insertDb( insertData ):
         #    print "'%s'" % row[0], row[1], type(row[1])
         #--
     except Exception, e:
-        print e
+        # print e
         conn.rollback()
     finally:
         conn.close()
-    print( "InsertData out")
+    # print( "InsertData out")
     
 def selectDb( DevAddr, StartDttm ):
     result = []
     try:
         ( conn, cur) = initDb()
         query = "SELECT * FROM mi_payload where devaddr = '"+ DevAddr + "' AND dttm > '" +str(StartDttm)+ "' order by dttm;"
-        print ( query )
+        # print ( query )
         ret = cur.execute( query )
         for row in ret.fetchall():
             result.append( (row[0], row[1], row[2] ) )
         #--
     except Exception, e:
-        print e
+        # print e
         if conn: conn.rollback()
     finally:
         if conn: conn.close()
@@ -145,7 +145,7 @@ def deleteDb( DevAddr, LastDttm ):
         ret = cur.execute("DELETE FROM mi_payload where devaddr = '"+ DevAddr + "' AND dttm <= '"+LastDttm+"';")
         conn.commit()
     except Exception, e:
-        print e
+        # print e
         if conn: conn.rollback()
     finally:
         if conn: conn.close()
@@ -161,14 +161,14 @@ def cmdDb( cmd ):
             result.append( row )
         conn.commit()
     except Exception, e:
-        print e
+        # print e
         if conn: conn.rollback()
     finally:
         if conn: conn.close()
     return result
 
 def infoDb():
-    print( "++++++++++++++++" )
+    # print( "++++++++++++++++" )
     try:
         ( conn, cur) = initDb()
         query = "select name from sqlite_master where type='table';"
@@ -231,11 +231,11 @@ def getLastDttmByMACADDR( MAC_ADDR, idx ):
 
 # update last read dttm to CSV
 def saveLastReadDttmByMACADDR( MAC_ADDR, lastReadDttm ):
-    print( "---save---Dev:" + MAC_ADDR + " lastRead:" + str(lastReadDttm))
+    # print( "---save---Dev:" + MAC_ADDR + " lastRead:" + str(lastReadDttm))
     saveLastDttmByMACADDR( MAC_ADDR, lastReadDttm, 1)
 
 def saveLastSendDttmByMACADDR( MAC_ADDR, lastSendDttm ):
-    print( "===save===Dev:" + MAC_ADDR + " lastSend:" + str(lastSendDttm))
+    # print( "===save===Dev:" + MAC_ADDR + " lastSend:" + str(lastSendDttm))
     saveLastDttmByMACADDR( MAC_ADDR, lastSendDttm, 2)
 
 def saveLastDttmByMACADDR( MAC_ADDR, lastDttm, idx ):

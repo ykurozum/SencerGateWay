@@ -63,6 +63,7 @@ class AuthenticationDelegate(DefaultDelegate):
         elif hnd == 0x3e:
             #self.disconnect()             
             hexStr = str(data.encode("hex"))
+            self.device._log.info('Response Status:'+ hexStr )
             if hexStr == "100201": 
                 self.device.datapool["status"] = hexStr
             elif hexStr == "100204":
@@ -93,7 +94,7 @@ class MiBand3(Peripheral):
         FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
         logging.basicConfig(format=FORMAT)
         log_level = logging.WARNING if not debug else logging.DEBUG
-        self._log = logging.getLogger(self.__class__.__name__)
+        self._log = logging.getLogger(self.__class__.__name__ + " ")
         self._log.setLevel(log_level)
 
         self._log.info('Connecting to ' + mac_address)

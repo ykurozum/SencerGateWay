@@ -1,5 +1,7 @@
 import sys
 from auth3 import MiBand3
+from cursesmenu import *
+from cursesmenu.items import *
 from constants import ALERT_TYPES
 from bluepy.btle import Peripheral
 import datetime
@@ -9,10 +11,20 @@ import os
 import binascii
 import utils
 import struct
+import logging
 
 READ_INTERVAL_SEC = 10
 LOOP_INTERVAL = 5
-RETRY_COUNT = 1
+RETRY_COUNT = 3
+LOG_FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
+logging.basicConfig(format=LOG_FORMAT)
+log = logging.getLogger("MiBand3")
+log = logging.getLogger("Receiver")
+log_level = logging.INFO
+#log_level = logging.WARNING 
+#log_level = logging.DEBUG
+log.setLevel(log_level)
+
 
 def call_immediate():
     print 'Sending Call Alert'
@@ -70,12 +82,14 @@ def startGetData( MAC_ADDR, datapool, getStartBin):
     #    print("Initialized...")
     #    band.disconnect()
 
+    band = None
+
     band = MiBand3(MAC_ADDR, debug=True, datapool=datapool)
     band.setSecurityLevel(level = "high")
 
     # Authenticate the MiBand
     band.authenticate()
-
+    
     # get Mi Band3 time
     mibandtime = band.readCharacteristic(0x002f)
     midttm = utils.hexbin2dttm( mibandtime, 0)
@@ -109,53 +123,60 @@ def startGetData( MAC_ADDR, datapool, getStartBin):
     band.writeCharacteristic(0x003e, getStartBin, False)
     band.writeCharacteristic(0x003e, "\x02", False)
 
-    try:
-        while True:
-            if band.waitForNotifications(0.5) == False:
-                break
-    except KeyboardInterrupt:
-        print "Catch Interrupt: disconnect"
-    finally:
-        # utils.dumpDataPool( band.datapool )
-        band.disconnect()
+    while True:
+        if band.waitForNotifications(0.5) == False:
+            break
+    band.disconnect()
+    log.info('connection disconnected(nomal process)')
 
 def sleepLoop():
-    print( "wait for "+str(LOOP_INTERVAL) + "sec" ),
+    # print( "wait for "+str(LOOP_INTERVAL) + "sec" ),
     sys.stdout.flush()
     for i in range( LOOP_INTERVAL ):
         time.sleep( 1 )
-        print( "."),
+        # print( "."),
         sys.stdout.flush()
-    print( "")
+    # print( "")
 
 #--------------------------------------------
 def startRead( MAC_ADDR, lastDttm ):
 
-    # print 'Attempting to connect to ', MAC_ADDR
-
-    for retry in xrange(RETRY_COUNT):
-        status = 0
+    for retry in xrange( RETRY_COUNT ):
+        # print 'Attempting to connect to ', MAC_ADDR
+        log.info('===================================================================' )
+        log.info('Attempting to connect to ' + MAC_ADDR + '. Read dttm from ' + str( lastDttm) )
+        status = "-1"
+        # print("getStartDttm:"+ str( lastDttm ) )
         lastDttmHexBin = utils.dttm2hexEndianBin( lastDttm )
         datapool = {"status":"" ,  "StartDttm":"", "LastDttm":"", "payload":[], "DeviceAddress":"" }
         try:
             startGetData( MAC_ADDR, datapool, lastDttmHexBin)
             status = datapool["status"]
-            print( "ResultStatus:"+str( status ) )
-        except:
-            status = -1
-            print( "ResultStatus:"+str( status ) )
+        except  Exception as e :
+            # print ("X>except:------"  )
+            # print ( e  )
+            # print ("---------------"  )
+            log.info('ExceptionCatch------------------')
+            log.info( e )
+            log.info('--------------------------------')
+        finally:
+            pass
 
+        log.info('Result status:'+ status )
         if( status == "100201" ):
             ( lastDttm, result ) = utils.splitDataPool( datapool )
             utils.insertDb( result )
-            print("LastDttm in data pool:"+ str( lastDttm ) )
+            # print("LastDttm in data pool:"+ str( lastDttm ) )
             lastDttm = lastDttm + timedelta(minutes=1)
+            log.info( str(len(result)) + " data readed" )
             return lastDttm
-        else:
-            if ( RETRY_COUNT > 1 ):
+        elif( status == "100204" ):
+            if( retry < (RETRY_COUNT-1) ):
                 # Retry
-                print("Retry. "),
+                log.info('Going to retry('+str(retry)+')' )
                 sleepLoop()
+        else:
+            break
 
 #-------------------------
 while True:
@@ -166,18 +187,18 @@ while True:
         for deviceInfo in devices:
             MAC_ADDR = deviceInfo[0]
             lastReadDttm = utils.getLastReadDttmByMACADDR( MAC_ADDR )
-            print ("Connect to "+ MAC_ADDR + " lastStartRead:"+str(lastReadDttm) )
             lastDttm = startRead( MAC_ADDR, lastReadDttm )
             if ( lastDttm != None ):
-                print (" lastEndRead:"+str(lastDttm) )
                 utils.saveLastReadDttmByMACADDR( MAC_ADDR, lastDttm )
             sleepLoop()
 
         # Read Interval
         time.sleep( READ_INTERVAL_SEC )
     except KeyboardInterrupt:
-        print ( "Interrupt catch!!" )
+        log.info( "KeyboardInterrupt catch!!" )
         break
-    except:
-        print ( sys.exc_info() )
+    except Exception as e:
+        log.info( "Exception catch" )
+        log.info( e )
+        # print( e )
 sys.exit(0)
