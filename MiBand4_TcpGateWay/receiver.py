@@ -182,7 +182,7 @@ def startGetData4( MAC_ADDR, key, datapool, getStartBin):
     band.writeCharacteristic(0x0036, "\x01\x00", False)
     band.writeCharacteristic(0x0035, "\x06\x19\x00\x00", False)
     band.writeCharacteristic(0x0036, "\x00\x00", False)
-    band.writeCharacteristic(0x003b, "\x01\x01\xe3\x07\x0b\x08\x0b\x28\x00\x24", False)
+    band.writeCharacteristic(0x003b, getStartBin, False)
     band.writeCharacteristic(0x003b, "\x02", False)
     while True:
 #         if band.waitForNotifications(0.5):
