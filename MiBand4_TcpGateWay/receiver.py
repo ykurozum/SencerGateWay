@@ -185,8 +185,6 @@ def startGetData4( MAC_ADDR, key, datapool, getStartBin):
     band.writeCharacteristic(0x003b, getStartBin, False)
     band.writeCharacteristic(0x003b, "\x02", False)
     while True:
-#         if band.waitForNotifications(0.5):
-#             continue
         if band.waitForNotifications(0.5) == False:
             break
     band.disconnect()
@@ -253,7 +251,7 @@ configParser.read("config.ini")
 config = configParser["config"]
 
 # MiBand3 key
-AUTH_KEY = binascii.a2b_hex(config["authKey"].strip().replace("\\x",""))
+AUTH_KEY = binascii.a2b_hex(config["authKey"].strip())
 print("AUTH_KEY = " + binascii.b2a_hex(AUTH_KEY))
 
 while True:
@@ -271,7 +269,7 @@ while True:
                 lastDttm = startRead( MAC_ADDR, AUTH_KEY, VERSION3, lastReadDttm )
             else:
                 # MiBand4
-                key = binascii.a2b_hex(val.replace("\\x",""))
+                key = binascii.a2b_hex(val)
                 lastDttm = startRead( MAC_ADDR, key, VERSION4, lastReadDttm )
 
             if ( lastDttm != None ):
