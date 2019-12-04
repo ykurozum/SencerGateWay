@@ -7,6 +7,7 @@ import sqlite3
 import time
 import struct
 import csv
+import shutil
 
 DEVICE_FILE = 'devices.csv'
 DB_FILE = 'midata.db'
@@ -239,6 +240,14 @@ def saveLastSendDttmByMACADDR( MAC_ADDR, lastSendDttm ):
     saveLastDttmByMACADDR( MAC_ADDR, lastSendDttm, 2)
 
 def saveLastDttmByMACADDR( MAC_ADDR, lastDttm, idx ):
+    # check device file
+    if (os.path.exists(DEVICE_FILE)):
+        # make backup
+        shutil.copy2(DEVICE_FILE, DEVICE_FILE + ".bk")
+    elif:
+        # remake device file
+        shutil.copy2(DEVICE_FILE + ".bk", DEVICE_FILE)
+
     # read devices file
     rdevFile = open( DEVICE_FILE )
     reader = csv.reader( rdevFile )
