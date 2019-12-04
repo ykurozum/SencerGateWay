@@ -223,10 +223,8 @@ def startRead( MAC_ADDR, key, type, lastDttm ):
             # print ("X>except:------"  )
             # print ( e  )
             # print ("---------------"  )
-#             log.info('ExceptionCatch------------------')
-#             log.info( e )
-#             log.info('--------------------------------')
-            log.exception('ExceptionCatch: %s', e)
+             log.info( e )
+#            log.exception('ExceptionCatch: %s', e)
         finally:
             pass
 
@@ -235,6 +233,7 @@ def startRead( MAC_ADDR, key, type, lastDttm ):
             ( lastDttm, result ) = utils.splitDataPool( datapool )
             utils.insertDb( result )
             # print("LastDttm in data pool:"+ str( lastDttm ) )
+            log.info( "LastDttm in data pool:"+ str( lastDttm ) )
             lastDttm = lastDttm + timedelta(minutes=1)
             log.info( str(len(result)) + " data readed" )
             return lastDttm
