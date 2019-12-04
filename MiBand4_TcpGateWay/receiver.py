@@ -254,6 +254,9 @@ config = configParser["config"]
 AUTH_KEY = binascii.a2b_hex(config["authKey"].strip())
 print("AUTH_KEY = " + binascii.b2a_hex(AUTH_KEY))
 
+# reception period
+DATA_PERIOD = int(config["dataPeriod"])
+
 while True:
     try:
         # Read Device List
@@ -261,7 +264,8 @@ while True:
         # Loop of Device List
         for deviceInfo in devices:
             MAC_ADDR = deviceInfo[IDX_ADDRESS]
-            lastReadDttm = utils.getLastReadDttmByMACADDR( MAC_ADDR )
+#             lastReadDttm = utils.getLastReadDttmByMACADDR( MAC_ADDR )
+            lastReadDttm = datetime.datetime.today() - timedelta(hours = DATA_PERIOD)
 
             val = deviceInfo[IDX_KEY].strip()
             if (val == ''):
