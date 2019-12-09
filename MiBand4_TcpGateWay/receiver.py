@@ -13,9 +13,30 @@ import struct
 import logging
 import configparser
 
-READ_INTERVAL_SEC = 10
-LOOP_INTERVAL = 5
-RETRY_COUNT = 3
+
+# Configuration
+configParser = configparser.ConfigParser()
+configParser.read("config.ini")
+config = configParser["config"]
+
+# MiBand3 key
+AUTH_KEY = binascii.a2b_hex(config["authKey"].strip())
+print("AUTH_KEY = {}".format(binascii.b2a_hex(AUTH_KEY)))
+
+# reception period
+DATA_PERIOD = int(config["dataPeriod"])
+print("DATA_PERIOD = {}".format(DATA_PERIOD))
+
+READ_INTERVAL = int(config["readInterval"])
+print("READ_INTERVAL = {}".format(READ_INTERVAL))
+
+LOOP_INTERVAL = int(config["loopInterval"])
+print("LOOP_INTERVAL = {}".format(LOOP_INTERVAL))
+
+RETRY_COUNT = int(config["retryCount"])
+print("RETRY_COUNT = {}".format(RETRY_COUNT))
+
+# logging configuration
 LOG_FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
 logging.basicConfig(format=LOG_FORMAT)
 log = logging.getLogger("MiBand3")
@@ -25,9 +46,11 @@ log_level = logging.INFO
 #log_level = logging.DEBUG
 log.setLevel(log_level)
 
+# MiBand version
 VERSION3 = '3'
 VERSION4 = '4'
 
+# index of device file
 IDX_ADDRESS = 0
 IDX_LASTREAD = 1
 IDX_LASTSEND = 2
@@ -151,8 +174,7 @@ def startGetData4( MAC_ADDR, key, datapool, getStartBin):
     band.authenticate()
 
     dateandtime = band.readCharacteristic(0x002c)
-    cdateandtime = binascii.b2a_hex(dateandtime)
-    print( "Date and Time: %s" % cdateandtime )
+    print( "Date and Time: %s" % utils.hexbin2dttm(dateandtime,0) )
     #time.sleep(0.24)
     band.writeCharacteristic(0x004e, "\x01\x00", False)
     band.writeCharacteristic(0x0061, "\x01\x00", False)
@@ -245,18 +267,6 @@ def startRead( MAC_ADDR, key, type, lastDttm ):
 
 #-------------------------
 
-# Configuration
-configParser = configparser.ConfigParser()
-configParser.read("config.ini")
-config = configParser["config"]
-
-# MiBand3 key
-AUTH_KEY = binascii.a2b_hex(config["authKey"].strip())
-print("AUTH_KEY = " + binascii.b2a_hex(AUTH_KEY))
-
-# reception period
-DATA_PERIOD = int(config["dataPeriod"])
-
 while True:
     try:
         # Read Device List
@@ -281,7 +291,7 @@ while True:
             sleepLoop()
 
         # Read Interval
-        time.sleep( READ_INTERVAL_SEC )
+        time.sleep( READ_INTERVAL )
     except KeyboardInterrupt:
         log.info( "KeyboardInterrupt catch!!" )
         break

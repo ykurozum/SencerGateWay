@@ -10,6 +10,18 @@ from data import Data
 from base import BaseJSONEncoder
 import traceback
 
+configParser = configparser.ConfigParser()
+configParser.read("config.ini")
+config = configParser["config"]
+
+HOST = config["host"]
+print("HOST = {}".format(HOST))
+
+SEND_INERVAL = float(config["sendInterval"])
+print("SEND_INERVAL = {}".format(SEND_INERVAL))
+
+PAR_DEVICE_INTERVAL = float(config["deviceInterval"])
+print("PAR_DEVICE_INTERVAL = {}".format(PAR_DEVICE_INTERVAL))
 
 def getAddr(addr):
     temp = addr.replace(":","")
@@ -34,7 +46,7 @@ def sendData(url, addr, dttm, data):
 
     print("status: " + str(res.getcode()))
 
-def sendPayload( target, getStart , host, sendInterval):
+def sendPayload( target, getStart , host):
     # global COM_PORT_NO
     try:
         #portttyStr = PORT_ADDR + str(COM_PORT_NO)
@@ -59,8 +71,8 @@ def sendPayload( target, getStart , host, sendInterval):
             pkt = ''
             getStart = datetime.datetime.strptime(lastDttmStr, '%Y-%m-%d %H:%M:%S')
             utils.saveLastSendDttmByMACADDR( target, getStart)
-            print ( "Going to sleep...Zzzzzz ("+ str(sendInterval) +")sec" )
-            time.sleep( sendInterval )
+            print ( "Going to sleep...Zzzzzz ("+ str(SEND_INERVAL) +")sec" )
+            time.sleep( SEND_INERVAL )
 
     except Exception as e:
         print( e )
@@ -76,19 +88,6 @@ def sendPayload( target, getStart , host, sendInterval):
 def main():
     while True:
         try:
-            configParser = configparser.ConfigParser()
-            configParser.read("config.ini")
-            config = configParser["config"]
-
-            HOST = config["host"]
-            print("HOST = " + HOST)
-
-            SEND_INERVAL = int(config["sendInterval"])
-            print("SEND_INERVAL = %d" % SEND_INERVAL)
-
-            PAR_DEVICE_INTERVAL = int(config["deviceInterval"])
-            print("PAR_DEVICE_INTERVAL = %d" % PAR_DEVICE_INTERVAL)
-
             # Read Device List
             devices = utils.getDeviceList()
             # Loop of Device List
@@ -96,7 +95,7 @@ def main():
                 MAC_ADDR = deviceInfo[0]
                 lastSendDttm = utils.getLastSendDttmByMACADDR( MAC_ADDR )
                 print ("MAC_ADDR:"+ MAC_ADDR + " lastSend:"+str(lastSendDttm) )
-                lastDttm = sendPayload( MAC_ADDR, lastSendDttm, HOST, SEND_INERVAL )
+                lastDttm = sendPayload( MAC_ADDR, lastSendDttm, HOST )
                 print (" lastEndRead:"+str(lastDttm) )
                 print ( "Going to next device. just sleep...Zzzzzz ("+ str( PAR_DEVICE_INTERVAL ) +")sec" )
                 time.sleep( PAR_DEVICE_INTERVAL )

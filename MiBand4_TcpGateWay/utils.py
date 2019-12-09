@@ -194,9 +194,23 @@ def infoDb():
         if conn: conn.close()
     return
 
+'''
+If device file not found, remake device file
+ '''
+def checkDeviceFile(doBackup):
+    if (os.path.exists(DEVICE_FILE)):
+        if (doBackup):
+            # make backup
+            shutil.copy2(DEVICE_FILE, DEVICE_FILE + ".bk")
+    else:
+        # remake device file
+        print("remake device file from backup")
+        shutil.copy2(DEVICE_FILE + ".bk", DEVICE_FILE)
 
 # getDeviceList
 def getDeviceList():
+    checkDeviceFile(False)
+
     devFile = open( DEVICE_FILE )
     reader = csv.reader( devFile )
     devices = []
@@ -219,6 +233,8 @@ def getLastSendDttmByMACADDR( MAC_ADDR ):
 
 # last dttm from CSV by colum
 def getLastDttmByMACADDR( MAC_ADDR, idx ):
+    checkDeviceFile(False)
+
     devFile = open( DEVICE_FILE )
     devices = getDeviceList()
     lastDttm = None
@@ -241,12 +257,7 @@ def saveLastSendDttmByMACADDR( MAC_ADDR, lastSendDttm ):
 
 def saveLastDttmByMACADDR( MAC_ADDR, lastDttm, idx ):
     # check device file
-    if (os.path.exists(DEVICE_FILE)):
-        # make backup
-        shutil.copy2(DEVICE_FILE, DEVICE_FILE + ".bk")
-    elif:
-        # remake device file
-        shutil.copy2(DEVICE_FILE + ".bk", DEVICE_FILE)
+    checkDeviceFile(True)
 
     # read devices file
     rdevFile = open( DEVICE_FILE )
