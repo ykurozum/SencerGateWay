@@ -221,12 +221,15 @@ def sleepLoop():
     # print( "")
 
 #--------------------------------------------
-def startRead( MAC_ADDR, key, type, lastDttm ):
+def startRead( MAC_ADDR, devname, key, type, lastDttm ):
 
     for retry in xrange( RETRY_COUNT ):
         # print 'Attempting to connect to ', MAC_ADDR
+        # log output
+        if not devname:
+            devname = "<Undefined>"
         log.info('===================================================================' )
-        log.info('Attempting to connect to ' + MAC_ADDR + '. Read dttm from ' + str( lastDttm) )
+        log.info('Attempting to connect to NAME:'+ devname +' ADDR:' + MAC_ADDR + '. Read dttm from ' + str( lastDttm) )
         status = "-1"
         # print("getStartDttm:"+ str( lastDttm ) )
         lastDttmHexBin = utils.dttm2hexEndianBin( lastDttm )
@@ -274,17 +277,18 @@ while True:
         # Loop of Device List
         for deviceInfo in devices:
             MAC_ADDR = deviceInfo[IDX_ADDRESS]
+            DEV_NAME = deviceInfo[IDX_COMMENT]
 #             lastReadDttm = utils.getLastReadDttmByMACADDR( MAC_ADDR )
             lastReadDttm = datetime.datetime.today() - timedelta(hours = DATA_PERIOD)
 
             val = deviceInfo[IDX_KEY].strip()
             if (val == ''):
                 # MiBand3
-                lastDttm = startRead( MAC_ADDR, AUTH_KEY, VERSION3, lastReadDttm )
+                lastDttm = startRead( MAC_ADDR, DEV_NAME, AUTH_KEY, VERSION3, lastReadDttm )
             else:
                 # MiBand4
                 key = binascii.a2b_hex(val)
-                lastDttm = startRead( MAC_ADDR, key, VERSION4, lastReadDttm )
+                lastDttm = startRead( MAC_ADDR, DEV_NAME, key, VERSION4, lastReadDttm )
 
             if ( lastDttm != None ):
                 utils.saveLastReadDttmByMACADDR( MAC_ADDR, lastDttm )

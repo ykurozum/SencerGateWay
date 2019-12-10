@@ -54,7 +54,7 @@ class AuthenticationDelegate(DefaultDelegate):
         elif hnd == 0x41:
             hexPayloadStr = str(data.encode("hex"))
             # print "01>" + hexPayloadStr + " len:" + str(len(data))
-            self.device._log.info('data length:'+ str(len(data)))
+            # self.device._log.info('data length:'+ str(len(data)))
             self.device.datapool["payload"].append( hexPayloadStr )
             self.idx = self.idx +1
         #Value
