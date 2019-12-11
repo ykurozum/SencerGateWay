@@ -8,8 +8,8 @@ while( True ):
     line = raw_input("sqlite>>")
     if ( line == 'quit' or line == 'exit' ):
         break
-    print( "EXEC:"+line )
+    # print( "EXEC:"+line )
     result = utils.cmdDb( line )
-    print( result )
+    # print( result )
     for row in result :
         print( row )
