@@ -36,6 +36,9 @@ print("LOOP_INTERVAL = {}".format(LOOP_INTERVAL))
 RETRY_COUNT = int(config["retryCount"])
 print("RETRY_COUNT = {}".format(RETRY_COUNT))
 
+BEFORE_24H_MODE = config["before24HMode"]
+print("BEFORE_24H_MODE = {}".format(BEFORE_24H_MODE))
+
 # logging configuration
 LOG_FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
 logging.basicConfig(format=LOG_FORMAT)
@@ -228,7 +231,6 @@ def startRead( MAC_ADDR, devname, key, type, lastDttm ):
         # log output
         if not devname:
             devname = "<Undefined>"
-        log.info('===================================================================' )
         log.info('Attempting to connect to NAME:'+ devname +' ADDR:' + MAC_ADDR + '. Read dttm from ' + str( lastDttm) )
         status = "-1"
         # print("getStartDttm:"+ str( lastDttm ) )
@@ -276,10 +278,18 @@ while True:
         devices = utils.getDeviceList()
         # Loop of Device List
         for deviceInfo in devices:
+            log.info('===================================================================' )
             MAC_ADDR = deviceInfo[IDX_ADDRESS]
             DEV_NAME = deviceInfo[IDX_COMMENT]
-#             lastReadDttm = utils.getLastReadDttmByMACADDR( MAC_ADDR )
-            lastReadDttm = datetime.datetime.today() - timedelta(hours = DATA_PERIOD)
+
+            lastReadDttm = utils.getLastReadDttmByMACADDR( MAC_ADDR )
+            if ( BEFORE_24H_MODE == True ):
+                before24HDttm = datetime.datetime.now() - timedelta(hours = DATA_PERIOD)
+                if ( lastReadDttm < before24HDttm ):
+                    strDttm = before24HDttm.strftime('%Y-%m-%d %H:%M:%S') 
+                    before24HDttm = datetime.datetime.strptime( strDttm, '%Y-%m-%d %H:%M:%S')
+                    log.info( "(24H mode ON)Overwrite to read start dttm:"+ str(lastReadDttm) +" to "+ str(before24HDttm ) ) 
+                    lastReadDttm = before24HDttm
 
             val = deviceInfo[IDX_KEY].strip()
             if (val == ''):
