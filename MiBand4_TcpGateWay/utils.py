@@ -126,7 +126,7 @@ def selectDb( DevAddr, StartDttm ):
     result = []
     try:
         ( conn, cur) = initDb()
-        query = "SELECT * FROM mi_payload where devaddr = '"+ DevAddr + "' AND dttm > '" +str(StartDttm)+ "' order by dttm;"
+        query = "SELECT DISTINCT * FROM mi_payload where devaddr = '"+ DevAddr + "' AND dttm > '" +str(StartDttm)+ "' order by dttm;"
         # print ( query )
         ret = cur.execute( query )
         for row in ret.fetchall():
