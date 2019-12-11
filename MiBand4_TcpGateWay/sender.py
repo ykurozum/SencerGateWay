@@ -31,6 +31,9 @@ HOST = config["host"]
 # print("HOST = {}".format(HOST))
 log.info("HOST = {}".format(HOST))
 
+SEND_TIMEOUT = config["sendTimeout"]
+log.info("SEND_TIMEOUT = {}".format(SEND_TIMEOUT))
+
 
 SEND_INERVAL = float(config["sendInterval"])
 # print("SEND_INERVAL = {}".format(SEND_INERVAL))
@@ -45,7 +48,6 @@ def getAddr(addr):
     return temp
 
 def sendData(url, addr, dttm, data):
-
     d = Data()
     d.DevEUI_uplink.DevAddr = addr
     d.DevEUI_uplink.DevEUI = getAddr(addr)
@@ -58,24 +60,38 @@ def sendData(url, addr, dttm, data):
         'Content-Type': 'application/json',
     }
     # print("send:\n" + body)
-    req = urllib2.Request(url, body, headers)
-    res = urllib2.urlopen(req)
+    req = urllib2.Request(url, body, headers )
+    # for debug
+    startTime = time.time()
+    log.debug('url open start: data time:' + d.DevEUI_uplink.Time)
+    res = urllib2.urlopen(req, timeout= float(SEND_TIMEOUT) )
+
+    # for debug
+    elapsed_time = time.time() - startTime
+    log.debug('url open done: Elapsed time:%s(sec)', elapsed_time)
 
     # print("status: " + str(res.getcode()))
 
 def sendPayload( target, devname, getStart , host):
     # global COM_PORT_NO
+    result = []
+    # log output
+    if not devname:
+        devname = "<Undefined>" 
+
     try:
         #portttyStr = PORT_ADDR + str(COM_PORT_NO)
         #print( "Try open port is:"+portttyStr )
 
+        # for debug
+        log.debug( "Start selecting target device(%s) data to send from DB. from dttm:%s", devname, getStart)
+
         result = utils.selectDb( target.replace(":","") , getStart)
         # print( " DEV:"+ target + "  count:"+ str( len( result ) ) )
         cur = 0
-    
-        # log output
-        if not devname:
-            devname = "<Undefined>" 
+
+        # for debug
+        log.debug( "End select. result count is %s", len(result) )
 
         if( len( result ) > 0 ):
             log.info( "Start sending.... DevName:"+devname+" DevAddr:"+ target + " StartDttm:" + str( getStart ) + " DataCount:" + str( len( result)) )
@@ -98,22 +114,22 @@ def sendPayload( target, devname, getStart , host):
             # print ( "Going to sleep...Zzzzzz ("+ str(SEND_INERVAL) +")sec" )
             time.sleep( SEND_INERVAL )
 
-
     except Exception as e:
         # print( e )
-        log.exception('ExceptionCatch(1): %s', e)
-        #if ( COM_PORT_NO < PORTMAX ):
-        #  COM_PORT_NO = COM_PORT_NO + 1
-        #else:
-        #  COM_PORT_NO = 0
-        #getStart = getStart + timedelta(minutes=1)
+        log.error('ExceptionCatch(5):%s', e)
+
     finally:
         # log output
         if( len( result ) > 0 ):
             log.info( "Send completely.  DevAddr:"+ target + " EndDttm  :" + str( getStart ) + " SentDataCount:" + str( cur ) )
-
-        # result save 
-        utils.saveLastSendDttmByMACADDR( target, getStart)
+            # for debug
+            log.debug('start result save to device.csv')
+            # result save 
+            utils.saveLastSendDttmByMACADDR( target, getStart)
+            # for debug
+            log.debug('save done')
+        else:
+            log.debug( "No data Send. There is no transmission target.")
 
     return getStart
 
@@ -137,11 +153,12 @@ def main():
 
         except KeyboardInterrupt:
             # print ( "Interrupt catch!!" )
-            log.exception("KeybordInterrupt(1) catch!!")
+            log.error("KeybordInterrupt(1) catch!!")
             break
         except:
             # print ( sys.exc_info() )
-            log.exception('ExceptionCatch(2): %s', e)
+            log.exception('ExceptionCatch(2):')
+
     sys.exit(0)
 
 main()
