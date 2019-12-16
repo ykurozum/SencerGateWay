@@ -278,31 +278,38 @@ while True:
         devices = utils.getDeviceList()
         # Loop of Device List
         for deviceInfo in devices:
+
             log.info('===================================================================' )
             MAC_ADDR = deviceInfo[IDX_ADDRESS]
             DEV_NAME = deviceInfo[IDX_COMMENT]
 
-            lastReadDttm = utils.getLastReadDttmByMACADDR( MAC_ADDR )
-            if ( BEFORE_24H_MODE == True ):
-                before24HDttm = datetime.datetime.now() - timedelta(hours = DATA_PERIOD)
-                if ( lastReadDttm < before24HDttm ):
-                    strDttm = before24HDttm.strftime('%Y-%m-%d %H:%M:%S') 
-                    before24HDttm = datetime.datetime.strptime( strDttm, '%Y-%m-%d %H:%M:%S')
-                    log.info( "(24H mode ON)Overwrite to read start dttm:"+ str(lastReadDttm) +" to "+ str(before24HDttm ) ) 
-                    lastReadDttm = before24HDttm
+            try:
 
-            val = deviceInfo[IDX_KEY].strip()
-            if (val == ''):
-                # MiBand3
-                lastDttm = startRead( MAC_ADDR, DEV_NAME, AUTH_KEY, VERSION3, lastReadDttm )
-            else:
-                # MiBand4
-                key = binascii.a2b_hex(val)
-                lastDttm = startRead( MAC_ADDR, DEV_NAME, key, VERSION4, lastReadDttm )
+                lastReadDttm = utils.getLastReadDttmByMACADDR( MAC_ADDR )
+                if ( BEFORE_24H_MODE == True ):
+                    before24HDttm = datetime.datetime.now() - timedelta(hours = DATA_PERIOD)
+                    if ( lastReadDttm < before24HDttm ):
+                        strDttm = before24HDttm.strftime('%Y-%m-%d %H:%M:%S')
+                        before24HDttm = datetime.datetime.strptime( strDttm, '%Y-%m-%d %H:%M:%S')
+                        log.info( "(24H mode ON)Overwrite to read start dttm:"+ str(lastReadDttm) +" to "+ str(before24HDttm ) )
+                        lastReadDttm = before24HDttm
 
-            if ( lastDttm != None ):
-                utils.saveLastReadDttmByMACADDR( MAC_ADDR, lastDttm )
-            sleepLoop()
+                val = deviceInfo[IDX_KEY].strip()
+                if (val == ''):
+                    # MiBand3
+                    lastDttm = startRead( MAC_ADDR, DEV_NAME, AUTH_KEY, VERSION3, lastReadDttm )
+                else:
+                    # MiBand4
+                    key = binascii.a2b_hex(val)
+                    lastDttm = startRead( MAC_ADDR, DEV_NAME, key, VERSION4, lastReadDttm )
+
+                if ( lastDttm != None ):
+                    utils.saveLastReadDttmByMACADDR( MAC_ADDR, lastDttm )
+                sleepLoop()
+            except Exception as e:
+                log.info( "Exception catch " + MAC_ADDR )
+                log.info( e )
+                # print( e )
 
         # Read Interval
         time.sleep( READ_INTERVAL )

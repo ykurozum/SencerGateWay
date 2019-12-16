@@ -77,7 +77,7 @@ def sendPayload( target, devname, getStart , host):
     result = []
     # log output
     if not devname:
-        devname = "<Undefined>" 
+        devname = "<Undefined>"
 
     try:
         #portttyStr = PORT_ADDR + str(COM_PORT_NO)
@@ -124,7 +124,7 @@ def sendPayload( target, devname, getStart , host):
             log.info( "Send completely.  DevAddr:"+ target + " EndDttm  :" + str( getStart ) + " SentDataCount:" + str( cur ) )
             # for debug
             log.debug('start result save to device.csv')
-            # result save 
+            # result save
             utils.saveLastSendDttmByMACADDR( target, getStart)
             # for debug
             log.debug('save done')
@@ -144,12 +144,18 @@ def main():
             for deviceInfo in devices:
                 MAC_ADDR = deviceInfo[IDX_ADDRESS]
                 DEV_NAME = deviceInfo[IDX_COMMENT]
-                lastSendDttm = utils.getLastSendDttmByMACADDR( MAC_ADDR )
-                # print ("MAC_ADDR:"+ MAC_ADDR + " lastSend:"+str(lastSendDttm) )
-                lastDttm = sendPayload( MAC_ADDR, DEV_NAME, lastSendDttm, HOST )
-                # print (" lastEndRead:"+str(lastDttm) )
-                # print ( "Going to next device. just sleep...Zzzzzz ("+ str( PAR_DEVICE_INTERVAL ) +")sec" )
-                time.sleep( PAR_DEVICE_INTERVAL )
+
+                try:
+                    lastSendDttm = utils.getLastSendDttmByMACADDR( MAC_ADDR )
+                    # print ("MAC_ADDR:"+ MAC_ADDR + " lastSend:"+str(lastSendDttm) )
+                    lastDttm = sendPayload( MAC_ADDR, DEV_NAME, lastSendDttm, HOST )
+                    # print (" lastEndRead:"+str(lastDttm) )
+                    # print ( "Going to next device. just sleep...Zzzzzz ("+ str( PAR_DEVICE_INTERVAL ) +")sec" )
+                    time.sleep( PAR_DEVICE_INTERVAL )
+                except Exception as e:
+                    # print ( sys.exc_info() )
+                    log.info('ExceptionCatch(2): '+ MAC_ADDR)
+                    log.info(e)
 
         except KeyboardInterrupt:
             # print ( "Interrupt catch!!" )

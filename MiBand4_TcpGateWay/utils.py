@@ -22,6 +22,12 @@ if RUN_HOME != None :
 print( "DeviceFile is :" +   DEVICE_FILE )
 print( "sqlite DB file:" +   DB_FILE  )
 
+# check pattern and format
+DT_FORMAT = {
+    re.compile(r'^.* [0-9]{2}:[0-9]{2}:[0-9]{2}$'): '%Y-%m-%d %H:%M:%S',
+    re.compile(r'^.* [0-9]{2}:[0-9]{2}$'):'%Y-%m-%d %H:%M'
+}
+
 def hexbin2dttm( hexbin, sidx ):
     hex = binascii.b2a_hex( hexbin )
     yyStr  = str(hex)[sidx+2:sidx+4] + str(hex)[sidx:sidx+2]
@@ -235,15 +241,26 @@ def getLastSendDttmByMACADDR( MAC_ADDR ):
 def getLastDttmByMACADDR( MAC_ADDR, idx ):
     checkDeviceFile(False)
 
-    devFile = open( DEVICE_FILE )
-    devices = getDeviceList()
+    devFile = None
     lastDttm = None
-    for deviceInfo in devices:
-        if deviceInfo[0] == MAC_ADDR:
-            lastStr = deviceInfo[idx]
-            lastDttm = datetime.datetime.strptime( lastStr, '%Y-%m-%d %H:%M:%S')
+    try:
+        devFile = open( DEVICE_FILE )
+        devices = getDeviceList()
 
-    devFile.close( )
+        for deviceInfo in devices:
+            if deviceInfo[0] == MAC_ADDR:
+                lastStr = deviceInfo[idx]
+                for p in DT_FORMAT.keys():
+                    if p.match(lastStr):
+                        lastDttm = datetime.datetime.strptime( lastStr, FORMAT[p])
+                        break
+                break
+    finally:
+        if (devFile is not None):
+            devFile.close( )
+
+    if (lastDttm is None):
+        raise Exception('invalid format')
     return lastDttm
 
 # update last read dttm to CSV
