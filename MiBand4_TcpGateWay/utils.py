@@ -24,8 +24,8 @@ print( "sqlite DB file:" +   DB_FILE  )
 
 # check pattern and format
 DT_FORMAT = {
-    re.compile(r'^.* [0-9]{2}:[0-9]{2}:[0-9]{2}$'): '%Y-%m-%d %H:%M:%S',
-    re.compile(r'^.* [0-9]{2}:[0-9]{2}$'):'%Y-%m-%d %H:%M'
+    re.compile(r'^.* [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}$'): '%Y-%m-%d %H:%M:%S',
+    re.compile(r'^.* [0-9]{1,2}:[0-9]{1,2}$'):'%Y-%m-%d %H:%M'
 }
 
 def hexbin2dttm( hexbin, sidx ):
