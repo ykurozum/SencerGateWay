@@ -1,3 +1,4 @@
+#!/bin/bash
 # Make sure that the script will "exit 0" on success or any other
 # value on error.
 #
