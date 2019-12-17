@@ -252,7 +252,7 @@ def getLastDttmByMACADDR( MAC_ADDR, idx ):
                 lastStr = deviceInfo[idx]
                 for p in DT_FORMAT.keys():
                     if p.match(lastStr):
-                        lastDttm = datetime.datetime.strptime( lastStr, FORMAT[p])
+                        lastDttm = datetime.datetime.strptime( lastStr, DT_FORMAT[p])
                         break
                 break
     finally:
