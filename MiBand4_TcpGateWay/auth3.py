@@ -98,11 +98,8 @@ class MiBand3(Peripheral):
         datapool["DeviceAddress"] = mac_address.replace(":","")
         self.datapool = datapool
 
-        FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
-        logging.basicConfig(format=FORMAT)
-        log_level = logging.WARNING if not debug else logging.DEBUG
-        self._log = logging.getLogger(self.__class__.__name__ + " ")
-        self._log.setLevel(log_level)
+        logging.config.fileConfig("logging.conf")
+        self._log = logging.getLogger(self.__class__.__name__ )
 
         self._log.info('Connecting to ' + mac_address)
         Peripheral.__init__(self, mac_address, addrType=ADDR_TYPE_RANDOM)

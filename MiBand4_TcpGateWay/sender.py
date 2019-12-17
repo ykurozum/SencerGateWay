@@ -9,19 +9,16 @@ import urllib2
 from data import Data
 from base import BaseJSONEncoder
 import traceback
-import logging
+import logging.config
 
 IDX_ADDRESS = 0
 IDX_COMMENT = 3
 
-# for logging
-LOG_FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
-logging.basicConfig(format=LOG_FORMAT)
+# logging configuration
+logging.config.fileConfig("logging.conf")
 log = logging.getLogger("Sender")
-log_level = logging.INFO
-#log_level = logging.WARNING
-#log_level = logging.DEBUG
-log.setLevel(log_level)
+log.debug("!!!Sender START!!!")
+
 
 configParser = configparser.ConfigParser()
 configParser.read("config.ini")

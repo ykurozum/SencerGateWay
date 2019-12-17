@@ -12,7 +12,13 @@ import utils
 import struct
 import logging
 import configparser
+import logging.config
 
+
+# logging configuration
+logging.config.fileConfig("logging.conf")
+log = logging.getLogger("Receiver")
+log.debug("!!!Receiver START!!!")
 
 # Configuration
 configParser = configparser.ConfigParser()
@@ -21,33 +27,23 @@ config = configParser["config"]
 
 # MiBand3 key
 AUTH_KEY = binascii.a2b_hex(config["authKey"].strip())
-print("AUTH_KEY = {}".format(binascii.b2a_hex(AUTH_KEY)))
+log.info("AUTH_KEY = {}".format(binascii.b2a_hex(AUTH_KEY)))
 
 # reception period
 DATA_PERIOD = int(config["dataPeriod"])
-print("DATA_PERIOD = {}".format(DATA_PERIOD))
+log.info("DATA_PERIOD = {}".format(DATA_PERIOD))
 
 READ_INTERVAL = int(config["readInterval"])
-print("READ_INTERVAL = {}".format(READ_INTERVAL))
+log.info("READ_INTERVAL = {}".format(READ_INTERVAL))
 
 LOOP_INTERVAL = int(config["loopInterval"])
-print("LOOP_INTERVAL = {}".format(LOOP_INTERVAL))
+log.info("LOOP_INTERVAL = {}".format(LOOP_INTERVAL))
 
 RETRY_COUNT = int(config["retryCount"])
-print("RETRY_COUNT = {}".format(RETRY_COUNT))
+log.info("RETRY_COUNT = {}".format(RETRY_COUNT))
 
 BEFORE_24H_MODE = config["before24HMode"]
-print("BEFORE_24H_MODE = {}".format(BEFORE_24H_MODE))
-
-# logging configuration
-LOG_FORMAT = '%(asctime)-15s %(name)s (%(levelname)s) > %(message)s'
-logging.basicConfig(format=LOG_FORMAT)
-log = logging.getLogger("MiBand3")
-log = logging.getLogger("Receiver")
-log_level = logging.INFO
-#log_level = logging.WARNING
-#log_level = logging.DEBUG
-log.setLevel(log_level)
+log.info("BEFORE_24H_MODE = {}".format(BEFORE_24H_MODE))
 
 # MiBand version
 VERSION3 = '3'
