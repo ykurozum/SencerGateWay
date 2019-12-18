@@ -7,11 +7,14 @@ import json
 import urllib.request
 from bluepy import btle
 from beacontools import BeaconScanner,IBeaconFilter
-from logging import basicConfig, getLogger, DEBUG
 from data import Data
 from base import BaseJSONEncoder
 import configparser
 import traceback
+import logging
+import logging.config
+from urllib.error import URLError
+
 
 # デバイスリスト
 deviceList = {}
@@ -50,15 +53,6 @@ def getAddr(addr):
     return temp
 
 '''
-ログ出力
-'''
-def log(logDirPath, message):
-    logdate = datetime.datetime.today().strftime("%Y%m%d")
-    f = open( logDirPath + logdate + '.log','a')
-    f.write(message + '\n')
-    f.close()
-
-'''
 データ送信
 '''
 def sendData(url, addr, data):
@@ -74,54 +68,44 @@ def sendData(url, addr, data):
     headers = {
         'Content-Type': 'application/json',
     }
-    print("send:\n" + body)
+    # print("send:\n" + body)
 
     req = urllib.request.Request(url, body.encode(), headers)
     res = urllib.request.urlopen(req)
-    print("status: " + str(res.getcode()))
+    # print("status: " + str(res.getcode()))
 
 '''
 メイン
 '''
 if __name__ == '__main__':
+    # 初期設定
+    logging.config.fileConfig("logging.conf")
+    log = logging.getLogger("TagGateWay")
+    log.debug("!!!Tag GateWay START!!!")
 
     # 設定読み込み
     configParser = configparser.ConfigParser()
     configParser.read("config.ini")
     config = configParser["config"]
 
-
-    # logディレクトリパス
-    LOG_DIR_PATH = config["log_dir_path"]
-    print("LOG_DIR_PATH = " + LOG_DIR_PATH)
-    log(LOG_DIR_PATH, "LOG_DIR_PATH = " + LOG_DIR_PATH)
-
     # 対象UUID
     UUID = config["uuid"]
-    print("UUID = " + UUID)
-    log(LOG_DIR_PATH, "UUID = " + UUID)
+    log.debug("UUID = " + UUID)
 
     # スキャン時間[秒]
     SCAN_TIME = config.getint("scan_time")
-    print("SCAN_TIME = " + str(SCAN_TIME))
-    log(LOG_DIR_PATH, "SCAN_TIME = " + str(SCAN_TIME))
+    log.info( "SCAN_TIME = " + str(SCAN_TIME))
 
     # スキャンInterval時間[秒]
     SCAN_INTERVAL_TIME = config.getint("scan_interval_time")
-    print("SCAN_INTERVAL_TIME = " + str(SCAN_INTERVAL_TIME))
-    log(LOG_DIR_PATH, "SCAN_INTERVAL_TIME = " + str(SCAN_INTERVAL_TIME))
+    log.info( "SCAN_INTERVAL_TIME = " + str(SCAN_INTERVAL_TIME))
 
     # 転送URL
     HOST = config["host"]
-    print("HOST = " + HOST)
-    log(LOG_DIR_PATH, "HOST = " + HOST)
+    log.info( "HOST = " + HOST)
 
     # 受信ペイロード長
     PAYLOAD_LEN = 58
-
-    # 初期設定
-    basicConfig(level=DEBUG)
-    logger = getLogger(__name__)
 
     # デバイススキャンクラスを初期化
     # index=0 が /dev/hci0 に対応
@@ -142,6 +126,7 @@ if __name__ == '__main__':
 
             # スキャン結果が取得できなかった
             if len(deviceList) == 0:
+               log.debug("Device not found")
                continue
 
             # データ取得用スキャン
@@ -149,6 +134,7 @@ if __name__ == '__main__':
 
 
             for addr in deviceList.keys():
+                log.debug("Device:"+ addr )
 
                 for device in devices:
 
@@ -159,10 +145,16 @@ if __name__ == '__main__':
                         if (len(data) == PAYLOAD_LEN):
                             # データ送信
                             sendData(HOST, device.addr, data)
+                            log.debug( "Sent ADDR:" + device.addr + " DATA:" + data)
 
             time.sleep(SCAN_INTERVAL_TIME)
         except KeyboardInterrupt:
-            print("Keybord Interrupt catch!")
+            log.info("Keybord Interrupt catch!")
             break
-        except:
-            print(traceback.format_exc())
+        except Exception as e:
+            # print(traceback.format_exc())
+            log.error("ExceptionCatch(1):"+str(e) + " URL:"+HOST)
+        except URLError as e:
+            log.error("ExceptionCatch(2):"+str(e))
+        except e:
+            log.error("ExceptionCatch(3):"+str(e))
