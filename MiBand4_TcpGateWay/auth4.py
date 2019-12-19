@@ -104,7 +104,7 @@ class MiBand4(Peripheral):
         datapool["DeviceAddress"] = mac_address.replace(":","")
         self.datapool = datapool
 
-        logging.config.fileConfig("logging.conf")
+        # logging.config.fileConfig("logging.conf")
         self._log = logging.getLogger(self.__class__.__name__ )
 
         self._log.info('Connecting to ' + mac_address)
