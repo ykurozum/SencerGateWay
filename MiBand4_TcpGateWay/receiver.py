@@ -173,7 +173,6 @@ def startGetData4( MAC_ADDR, key, datapool, getStartBin):
     band.authenticate()
 
     dateandtime = band.readCharacteristic(0x002c)
-    print( "Date and Time: %s" % utils.hexbin2dttm(dateandtime,0) )
     #time.sleep(0.24)
     band.writeCharacteristic(0x004e, "\x01\x00", False)
     band.writeCharacteristic(0x0061, "\x01\x00", False)
