@@ -15,6 +15,9 @@ import logging
 import logging.config
 from urllib.error import URLError
 
+# for logging
+logging.config.fileConfig("logging.conf")
+log = logging.getLogger("TagGateWay")
 
 # デバイスリスト
 deviceList = {}
@@ -79,8 +82,6 @@ def sendData(url, addr, data):
 '''
 if __name__ == '__main__':
     # 初期設定
-    logging.config.fileConfig("logging.conf")
-    log = logging.getLogger("TagGateWay")
     log.debug("!!!Tag GateWay START!!!")
 
     # 設定読み込み

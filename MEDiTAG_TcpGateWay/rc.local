@@ -17,5 +17,6 @@ if [ "$_IP" ]; then
   printf "My IP address is %s\n" "$_IP"
 fi
 LOGDIR=/home/pi/py/meditag_tcp/log/
-sudo python3 /home/pi/py/meditag_tcp/transPayload-loop.py >> ${LOGDIR}output.log 2>&1 &
+cd /home/pi/py/meditag_tcp; sudo python3 transPayload-loop.py >> ${LOGDIR}output.log 2>&1 &
+
 exit 0
