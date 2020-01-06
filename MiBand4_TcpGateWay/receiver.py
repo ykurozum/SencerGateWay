@@ -45,6 +45,9 @@ log.info("RETRY_COUNT = {}".format(RETRY_COUNT))
 BEFORE_24H_MODE = config["before24HMode"]
 log.info("BEFORE_24H_MODE = {}".format(BEFORE_24H_MODE))
 
+CONNECT_TIMEOUT = int(config["connectTimeout"])
+log.info("CONNECT_TIMEOUT = {}".format(CONNECT_TIMEOUT))
+
 # MiBand version
 VERSION3 = '3'
 VERSION4 = '4'
@@ -167,7 +170,7 @@ def startGetData3( MAC_ADDR, key, datapool, getStartBin):
 MiBand4
 '''
 def startGetData4( MAC_ADDR, key, datapool, getStartBin):
-    band = MiBand4(MAC_ADDR, key, debug=True, datapool=datapool)
+    band = MiBand4(MAC_ADDR, key, debug=True, datapool=datapool, connect_timeout=CONNECT_TIMEOUT )
     band.setSecurityLevel(level = "medium")
 
     band.authenticate()
@@ -300,7 +303,7 @@ while True:
 
                 if ( lastDttm != None ):
                     utils.saveLastReadDttmByMACADDR( MAC_ADDR, lastDttm )
-                sleepLoop()
+                # sleepLoop()
             except Exception as e:
                 log.info( "Exception catch " + MAC_ADDR )
                 log.info( e )

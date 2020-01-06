@@ -5,13 +5,12 @@ from datetime import datetime
 from Crypto.Cipher import AES
 from Queue import Queue, Empty
 from bluepy.btle import Peripheral, DefaultDelegate, ADDR_TYPE_PUBLIC, ADDR_TYPE_RANDOM, BTLEException
+from bluepy.btle import BluepyHelper, BTLEDisconnectError
 import crc16
 import os
 import struct
 import utils
-
 from constants import UUIDS, AUTH_STATES, ALERT_TYPES, QUEUE_TYPES
-
 
 class AuthenticationDelegate4(DefaultDelegate):
     idx = 0
@@ -96,8 +95,9 @@ class MiBand4(Peripheral):
     _send_rnd_cmd = struct.pack('<2s', b'\x02\x00')
     _send_enc_key = struct.pack('<2s', b'\x03\x00')
     datapool = {}
+    _connect_timeout = 10
 
-    def __init__(self, mac_address, key, timeout=0.5, debug=False, datapool={}):
+    def __init__(self, mac_address, key, timeout=0.5, debug=False, datapool={}, connect_timeout=10):
         self._KEY = key
         self._send_key_cmd = struct.pack('<18s', b'\x01\x00' + self._KEY)
 
@@ -108,7 +108,14 @@ class MiBand4(Peripheral):
         self._log = logging.getLogger(self.__class__.__name__ )
 
         self._log.info('Connecting to ' + mac_address)
-        Peripheral.__init__(self, mac_address, addrType=ADDR_TYPE_PUBLIC)
+        # Peripheral.__init__(self, mac_address, addrType=ADDR_TYPE_PUBLIC)
+
+        self._connect_timeout = connect_timeout
+
+        #------------------------------------------------------------------------------------
+        Peripheral.__init__(self, mac_address, addrType=ADDR_TYPE_PUBLIC, iface=None )
+        #------------------------------------------------------------------------------------
+
         self._log.info('Connected')
 
         self.timeout = timeout
@@ -131,10 +138,105 @@ class MiBand4(Peripheral):
 
         # Enable auth service notifications on startup
         self._auth_notif(True)
-        # Let band to settle
-        self.waitForNotifications(0.1)
 
-    # Auth helpers ######################################################################
+        # Let band to settle
+        ret = self.waitForNotifications(0.1)
+
+    def _waitResp(self, wantType, timeout=None):
+        self._log.debug("Z1: _waitResp override method in timeout:" +str(timeout) )
+        while True:
+            if self._helper.poll() is not None:
+                raise BTLEInternalError("Helper exited")
+
+            if timeout:
+                fds = self._poller.poll(timeout*1000)
+                if len(fds) == 0:
+                    self._log.info("Select timeout:"+str(timeout) )
+                    return None
+
+            rv = self._helper.stdout.readline()
+            self._log.debug("Got:"+ str( repr(rv)) )
+            if rv.startswith('#') or rv == '\n' or len(rv)==0:
+                continue
+
+            resp = BluepyHelper.parseResp(rv)
+            if 'rsp' not in resp:
+                raise BTLEInternalError("No response type indicator", resp)
+
+            respType = resp['rsp'][0]
+            if respType in wantType:
+                return resp
+            elif respType == 'stat':
+                if 'state' in resp and len(resp['state']) > 0 and resp['state'][0] == 'disc':
+                    self._stopHelper()
+                    raise BTLEDisconnectError("Device disconnected", resp)
+            elif respType == 'err':
+                errcode=resp['code'][0]
+                if errcode=='nomgmt':
+                    raise BTLEManagementError("Management not available (permissions problem?)", resp)
+                elif errcode=='atterr':
+                    raise BTLEGattError("Bluetooth command failed", resp)
+                else:
+                    raise BTLEException("Error from bluepy-helper (%s)" % errcode, resp)
+            elif respType == 'scan':
+                # Scan response when we weren't interested. Ignore it
+                continue
+            else:
+                raise BTLEInternalError("Unexpected response (%s)" % respType, resp)
+    
+    # add new method by ykurozum
+    def _getResp(self, wantType, timeout=None):
+        if isinstance(wantType, list) is not True:
+            wantType = [wantType]
+
+        while True:
+            resp = self._waitResp(wantType + ['ntfy', 'ind'], timeout)
+            if resp is None:
+                return None
+
+            respType = resp['rsp'][0]
+            if respType == 'ntfy' or respType == 'ind':
+                hnd = resp['hnd'][0]
+                data = resp['d'][0]
+                if self.delegate is not None:
+                    self.delegate.handleNotification(hnd, data)
+                if respType not in wantType:
+                    continue
+            return resp
+
+    # add method override by ykurozum
+    def _connect( self, addr, addrType=ADDR_TYPE_PUBLIC, iface=None):
+        timeout = self._connect_timeout
+        #----------------------------------------------------------
+        # super method invoke case
+        # Peripheral._connect( self, addr, addrType, iface)
+        #----------------------------------------------------------
+        if len(addr.split(":")) != 6:
+            raise ValueError("Expected MAC address, got %s" % repr(addr))
+        if addrType not in (ADDR_TYPE_PUBLIC, ADDR_TYPE_RANDOM):
+            raise ValueError("Expected address type public or random, got {}".format(addrType))
+        self._startHelper(iface)
+        self.addr = addr
+        self.addrType = addrType
+        self.iface = iface
+        if iface is not None:
+            self._writeCmd("conn %s %s %s\n" % (addr, addrType, "hci"+str(iface)))
+        else:
+            self._writeCmd("conn %s %s\n" % (addr, addrType))
+        rsp = self._getResp('stat', timeout)
+        if rsp is None:
+            raise BTLEDisconnectError("Timed out while trying to connect to peripheral %s, addr type: %s" %
+                                      (addr, addrType), rsp)
+        while rsp != None and rsp['state'][0] == 'tryconn':
+            rsp = self._getResp('stat', timeout)
+            # rsp = self._getResp('stat' )
+        if rsp == None or rsp['state'][0] != 'conn':
+            self._stopHelper()
+            raise BTLEDisconnectError("Failed to connect to peripheral %s, addr type: %s" % (addr, addrType), rsp)
+        
+    def connect( self, addr, addrType=ADDR_TYPE_PUBLIC, iface=None):
+        Peripheral.connect( self, addr, addrType, iface)
+        
 
     def _auth_notif(self, enabled):
         if enabled:
@@ -153,19 +255,19 @@ class MiBand4(Peripheral):
     def _send_key(self):
         self._log.info("Sending Key...")
         self._char_auth.write(self._send_key_cmd)
-        self.waitForNotifications(self.timeout)
+        ret = self.waitForNotifications(self.timeout)
 
     def _req_rdn(self):
         self._log.info("Requesting random number...")
         self._char_auth.write(self._send_rnd_cmd)
-        self.waitForNotifications(self.timeout)
+        ret = self.waitForNotifications(self.timeout)
 
     def _send_enc_rdn(self, data):
         self._log.info("Sending encrypted random number")
         cmd = self._send_enc_key + self._encrypt(data)
         send_cmd = struct.pack('<18s', cmd)
         self._char_auth.write(send_cmd)
-        self.waitForNotifications(self.timeout)
+        ret = self.waitForNotifications(self.timeout)
 
     # Parse helpers ###################################################################
 
@@ -242,7 +344,7 @@ class MiBand4(Peripheral):
         self._send_key()
 
         while True:
-            self.waitForNotifications(0.1)
+            ret = self.waitForNotifications(0.1)
             if self.state == AUTH_STATES.AUTH_OK:
                 self._log.info('Initialized')
                 self._auth_notif(False)
@@ -258,7 +360,7 @@ class MiBand4(Peripheral):
         self._req_rdn()
 
         while True:
-            self.waitForNotifications(0.1)
+            ret = self.waitForNotifications(0.1)
             if self.state == AUTH_STATES.AUTH_OK:
                 self._log.info('Authenticated')
                 return True
@@ -347,7 +449,7 @@ class MiBand4(Peripheral):
         char.write(base_value+phone, withResponse=True)
 
     def change_date(self):
-        print('Change date and time')
+        self._log.debug('Change date and time')
         svc = self.getServiceByUUID(UUIDS.SERVICE_MIBAND1)
         char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_CURRENT_TIME)[0]
         # date = raw_input('Enter the date in dd-mm-yyyy format\n')
@@ -365,11 +467,11 @@ class MiBand4(Peripheral):
         #
         # write_val =  format(rem, '#04x') + format(fraction, '#04x') + format(month, '#04x') + format(day, '#04x') + format(hour, '#04x') + format(minute, '#04x') + format(seconds, '#04x') + format(5, '#04x') + format(0, '#04x') + format(0, '#04x') +'0x16'
         # write_val = write_val.replace('0x', '\\x')
-        # print(write_val)
+        # self._log.debug(write_val)
         char.write('\xe2\x07\x01\x1e\x00\x00\x00\x00\x00\x00\x16', withResponse=True)
         raw_input('Date Changed, press any key to continue')
     def dfuUpdate(self, fileName):
-        print('Update Firmware/Resource')
+        self._log.debug('Update Firmware/Resource')
         svc = self.getServiceByUUID(UUIDS.SERVICE_DFU_FIRMWARE)
         char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_DFU_FIRMWARE)[0]
         extension = os.path.splitext(fileName)[1][1:]
@@ -390,7 +492,7 @@ class MiBand4(Peripheral):
                 crc ^= (crc << 12) & 0xFFFF
                 crc ^= ((crc & 0xFF) << 5) & 0xFFFFFF
         crc &= 0xFFFF
-        print('CRC Value is-->', crc)
+        self._log.debug('CRC Value is-->', crc)
         raw_input('Press Enter to Continue')
         if extension.lower() == "res":
             # file size hex value is
@@ -403,20 +505,21 @@ class MiBand4(Peripheral):
           while True:
             c = f.read(20) #takes 20 bytes :D
             if not c:
-              print "Update Over"
+              self._log.debug ("Update Over")
               break
-            print('Writing Resource', c.encode('hex'))
+            self._log.debug('Writing Resource'+ str( c.encode('hex')))
             char1.write(c)
         # after update is done send these values
         char.write(b'\x00', withResponse=True)
-        self.waitForNotifications(0.5)
-        print('CheckSum is --> ', hex(crc & 0xFF), hex((crc >> 8) & 0xFF))
+        ret = self.waitForNotifications(0.5)
+
+        # self._log.debug('CheckSum is --> ', hex(crc & 0xFF), hex((crc >> 8) & 0xFF))
         checkSum = b'\x04' + chr(crc & 0xFF) + chr((crc >> 8) & 0xFF)
         char.write(checkSum, withResponse=True)
         if extension.lower() == "fw":
-            self.waitForNotifications(0.5)
+            ret = self.waitForNotifications(0.5)
             char.write('\x05', withResponse=True)
-        print('Update Complete')
+        self._log.debug('Update Complete')
         raw_input('Press Enter to Continue')
     def start_raw_data_realtime(self, heart_measure_callback=None, heart_raw_callback=None, accel_raw_callback=None):
             char_m = self.svc_heart.getCharacteristics(UUIDS.CHARACTERISTIC_HEART_RATE_MEASURE)[0]
@@ -447,7 +550,7 @@ class MiBand4(Peripheral):
             char_sensor.write(b'\x02')
             t = time.time()
             while True:
-                self.waitForNotifications(0.5)
+                ret = self.waitForNotifications(0.5)
                 self._parse_queue()
                 # send ping request every 12 sec
                 if (time.time() - t) >= 12:
@@ -480,8 +583,8 @@ class MiBand4(Peripheral):
 
     def start_get_previews_data(self, start_timestamp):
             self._auth_previews_data_notif(True)
-            self.waitForNotifications(0.1)
-            print("Trigger activity communication")
+            ret = self.waitForNotifications(0.1)
+            self._log.debug("Trigger activity communication")
             year = struct.pack("<H", start_timestamp.year)
             month = struct.pack("<H", start_timestamp.month)[0]
             day = struct.pack("<H", start_timestamp.day)[0]
