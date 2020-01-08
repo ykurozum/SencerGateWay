@@ -15,6 +15,8 @@ import configparser
 import logging.config
 
 
+APPVERSION = '1.1'
+
 # logging configuration
 logging.config.fileConfig("logging.conf")
 log = logging.getLogger("Receiver")
@@ -284,7 +286,7 @@ while True:
             try:
 
                 lastReadDttm = utils.getLastReadDttmByMACADDR( MAC_ADDR )
-                if ( BEFORE_24H_MODE == True ):
+                if ( BEFORE_24H_MODE ):
                     before24HDttm = datetime.datetime.now() - timedelta(hours = DATA_PERIOD)
                     if ( lastReadDttm < before24HDttm ):
                         strDttm = before24HDttm.strftime('%Y-%m-%d %H:%M:%S')
